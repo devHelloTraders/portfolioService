@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+
+    <changeSet id="00000000000003" author="bunty">
+<!--        <loadData-->
+<!--                file="config/liquibase/data/authority.csv"-->
+<!--                separator=";"-->
+<!--                tableName="authority"-->
+<!--                usePreparedStatements="true">-->
+<!--            <column name="name" type="string"/>-->
+<!--        </loadData>-->
+        <loadData
+                file="config/liquibase/data/user.csv"
+                separator=";"
+                tableName="user"
+                usePreparedStatements="true">
+            <column name="activated" type="boolean"/>
+            <column name="created_date" type="timestamp"/>
+        </loadData>
+<!--        <loadData-->
+<!--                file="config/liquibase/data/authority.csv"-->
+<!--                separator=";"-->
+<!--                tableName="user_authority"-->
+<!--                usePreparedStatements="true">-->
+<!--            <column name="user_id" type="numeric"/>-->
+<!--        </loadData>-->
+       </changeSet>
+
+</databaseChangeLog>

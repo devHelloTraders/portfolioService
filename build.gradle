@@ -1,0 +1,177 @@
+plugins {
+	id 'java'
+	id "idea"
+	id "eclipse"
+	id "com.gorylenko.gradle-git-properties"
+	alias(libs.plugins.spring.boot)
+	id "org.liquibase.gradle"
+}
+
+group = 'com.traders.hello'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(23)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudVersion', "2023.0.3")
+	springProfiles = ""
+	if (project.hasProperty("tls")) {
+		springProfiles += ",tls"
+	}
+	if (project.hasProperty("e2e")) {
+		springProfiles += ",e2e"
+	}
+}
+
+
+apply plugin: 'io.spring.dependency-management'
+
+apply from: "gradle/liquibase.gradle"
+
+if (project.hasProperty("prod")) {
+	apply from: "gradle/profile_prod.gradle"
+} else {
+	apply from: "gradle/profile_dev.gradle"
+}
+
+if (project.hasProperty("war")) {
+	apply from: "gradle/war.gradle"
+}
+
+if (project.hasProperty("zipkin")) {
+	apply from: "gradle/zipkin.gradle"
+}
+idea {
+	module {
+		excludeDirs += files("node_modules")
+	}
+}
+
+eclipse {
+	sourceSets {
+		main {
+			java {
+				srcDirs += ["build/generated/sources/annotationProcessor/java/main"]
+			}
+		}
+	}
+}
+
+defaultTasks "bootRun"
+
+springBoot {
+	mainClass = "com.traders.authService.HellotradersAuthenticationServiceApplication"
+}
+
+gitProperties {
+	failOnNoGitDirectory = false
+	keys = ["git.branch", "git.commit.id.abbrev", "git.commit.id.describe"]
+}
+
+tasks.withType(com.gorylenko.GenerateGitPropertiesTask).configureEach {
+	outputs.doNotCacheIf("Task is always executed") { true }
+}
+
+configurations {
+	providedRuntime
+	implementation.exclude module: "spring-boot-starter-tomcat"
+}
+dependencies {
+	implementation "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
+	implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+
+	implementation "org.springframework.boot:spring-boot-starter-undertow"
+	modules {
+		module("org.springframework.boot:spring-boot-starter-tomcat") {
+			replacedBy("org.springframework.boot:spring-boot-starter-undertow", "Use Undertow instead of Tomcat")
+		}
+	}
+	implementation "io.micrometer:micrometer-registry-prometheus-simpleclient"
+	implementation "jakarta.annotation:jakarta.annotation-api"
+	implementation "org.apache.commons:commons-lang3"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+	implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+	implementation "org.springframework.boot:spring-boot-loader-tools"
+	implementation "org.springframework.boot:spring-boot-starter-actuator"
+	implementation "org.springframework.boot:spring-boot-starter-aop"
+	implementation "org.springframework.boot:spring-boot-starter-logging"
+	implementation "org.springframework.boot:spring-boot-starter-mail"
+	implementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
+	implementation "org.springframework.boot:spring-boot-starter-security"
+
+	implementation "org.springframework.boot:spring-boot-starter-validation"
+	implementation "org.springframework.boot:spring-boot-starter-web"
+	implementation "org.springframework.cloud:spring-cloud-starter"
+	implementation "org.springframework.cloud:spring-cloud-starter-bootstrap"
+	implementation "org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j"
+	implementation "org.springframework.cloud:spring-cloud-starter-consul-config"
+	implementation "org.springframework.cloud:spring-cloud-starter-consul-discovery"
+	implementation "org.springframework.retry:spring-retry"
+	implementation platform(libs.spring.cloud.dependencies)
+	implementation libs.springdoc.openapi.starter.webmvc.api
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+	implementation "org.springframework.cloud:spring-cloud-starter-openfeign"
+	implementation "org.springframework.security:spring-security-data"
+	implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate6"
+	implementation "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
+	implementation "com.zaxxer:HikariCP"
+	implementation "org.hibernate.orm:hibernate-core"
+	implementation "org.hibernate.validator:hibernate-validator"
+	implementation "org.springframework.boot:spring-boot-starter-thymeleaf"
+	annotationProcessor "org.glassfish.jaxb:jaxb-runtime"
+	annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen"
+
+
+	implementation 'org.springframework.cloud:spring-cloud-config-server'
+	implementation 'org.springframework.session:spring-session-jdbc'
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+	implementation 'javax.cache:cache-api:1.1.1'
+	implementation 'org.redisson:redisson:3.37.0'
+	implementation 'org.hibernate.orm:hibernate-jcache:6.6.1.Final'
+
+
+	compileOnly 'org.projectlombok:lombok'
+	compileOnly 'jakarta.servlet:jakarta.servlet-api:6.1.0'
+
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+task cleanResources(type: Delete) {
+	delete "build/resources"
+}
+
+
+compileJava.dependsOn processResources
+processResources.dependsOn bootBuildInfo

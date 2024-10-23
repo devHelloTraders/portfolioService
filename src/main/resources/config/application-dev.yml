@@ -1,0 +1,123 @@
+# ===================================================================
+# Spring Boot configuration for the "dev" profile.
+#
+# This configuration overrides the application.yml file.
+#
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+logging:
+  level:
+    ROOT: DEBUG
+    com.traders.authService.appconfig: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.traders.authService: DEBUG
+
+management:
+  zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0 # report 100% of traces
+
+spring:
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**
+    livereload:
+      enabled: false # we use Webpack dev server + BrowserSync for livereload
+  jackson:
+    serialization:
+      indent-output: true
+  cloud:
+    consul:
+      config:
+        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
+        format: yaml
+        profile-separator: '-'
+      discovery:
+        prefer-ip-address: true
+        tags:
+          - profile=${spring.profiles.active}
+          - version='@project.version@'
+          - git-version=${git.commit.id.describe:}
+          - git-commit=${git.commit.id.abbrev:}
+          - git-branch=${git.branch:}
+      host: localhost
+      port: 8500
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:mysql://localhost:3306/hello_traders?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+  liquibase:
+    # Remove 'faker' if you do not want the sample data to be loaded automatically
+    contexts: dev, faker
+  messages:
+    cache-duration: PT1S # 1 second, see the ISO 8601 standard
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8081
+  # make sure requests the proxy uri instead of the server one
+  forward-headers-strategy: native
+
+# ===================================================================
+# ===================================================================
+
+config:
+  cache: # Cache configuration
+    redis: # Redis configuration
+      expiration: 3600 # By default objects stay 1 hour (in seconds) in the cache
+      server: redis://default:HelloTraders%40123@redis-16705.c244.us-east-1-2.ec2.redns.redis-cloud.com:16705
+      cluster: false
+#        server: redis://localhost:6379,redis://localhost:16379,redis://localhost:26379
+#        cluster: true
+#  # CORS is disabled by default on microservices, as you should access them through a gateway.
+#  # If you want to enable it, please uncomment the configuration below.
+#  # cors:
+#  #   allowed-origins: "http://localhost:9000,https://localhost:9000"
+#  #   allowed-methods: "*"
+#  #   allowed-headers: "*"
+#  #   exposed-headers: "Authorization,Link,X-Total-Count"
+#  #   allow-credentials: true
+#  #   max-age: 1800
+  security:
+    authentication:
+      jwt:
+#        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
+        base64-secret: YmYyOGZmZGEzMWY5OGIxNjZlMDczZmQ1OWM2ZjhiMmJhYzRjNGM5NWViODQwYzQ0MTEyYWM2NDYwZTRhMzkxYzQ2YzVjYzIyZjJlOGFiNWRjYzk4MWEyMTdjMjI0MDJhY2Q3ODA1OWQwZjQ3NWI1YjlkNzIwZThmNTAzYWRiYTY=
+#        # Token is valid 24 hours
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  logging:
+    use-json-format: false # By default, logs are not in Json format
+    logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+#
+# More documentation is available at:
+# ===================================================================
+
+# application:
