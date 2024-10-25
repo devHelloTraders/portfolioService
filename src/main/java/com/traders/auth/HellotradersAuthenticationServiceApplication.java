@@ -1,8 +1,8 @@
 package com.traders.auth;
 
-import com.traders.auth.appconfig.util.DefaultProfileUtil;
+import com.traders.common.appconfig.util.DefaultProfileUtil;
 import com.traders.auth.config.CRLFLogConverter;
-import com.traders.auth.constants.ProfileConstants;
+import com.traders.common.constants.ProfileConstants;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

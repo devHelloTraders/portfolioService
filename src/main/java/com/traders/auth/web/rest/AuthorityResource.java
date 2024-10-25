@@ -1,7 +1,7 @@
 package com.traders.auth.web.rest;
 
-import com.traders.auth.appconfig.util.HeaderUtil;
-import com.traders.auth.appconfig.util.ResponseUtil;
+import com.traders.common.appconfig.util.HeaderUtil;
+import com.traders.common.appconfig.util.ResponseUtil;
 import com.traders.auth.domain.Authority;
 import com.traders.auth.exception.BadRequestAlertException;
 import com.traders.auth.repository.AuthorityRepository;

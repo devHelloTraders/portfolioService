@@ -1,8 +1,8 @@
 package com.traders.auth.web.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.traders.auth.security.SecurityUtils;
 import com.traders.auth.web.rest.model.LoginVM;
+import com.traders.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

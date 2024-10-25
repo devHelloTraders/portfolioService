@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.traders.hello'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.1'
 
 java {
 	toolchain {
@@ -23,7 +23,9 @@ configurations {
 }
 
 repositories {
+	mavenLocal()
 	mavenCentral()
+
 }
 
 ext {
@@ -155,6 +157,9 @@ dependencies {
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'com.mysql:mysql-connector-j:9.1.0'
+
+	implementation 'com.traders.hello:commonService:0.0.1-SNAPSHOT'
 
 }
 

@@ -1,6 +1,7 @@
 package com.traders.auth.security;
 
-import com.traders.auth.constants.AppConstants;
+import com.traders.common.constants.AppConstants;
+import com.traders.common.security.SecurityUtils;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
 

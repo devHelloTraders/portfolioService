@@ -1,10 +1,8 @@
 package com.traders.auth.web.rest;
 
-import com.traders.auth.appconfig.util.HeaderUtil;
-import com.traders.auth.appconfig.util.PaginationUtil;
-import com.traders.auth.appconfig.util.ResponseUtil;
-import com.traders.auth.constants.AppConstants;
-import com.traders.auth.constants.AuthoritiesConstants;
+import com.traders.common.appconfig.util.HeaderUtil;
+import com.traders.common.appconfig.util.PaginationUtil;
+import com.traders.common.appconfig.util.ResponseUtil;
 import com.traders.auth.domain.User;
 import com.traders.auth.exception.BadRequestAlertException;
 import com.traders.auth.exception.EmailAlreadyUsedException;
@@ -13,6 +11,8 @@ import com.traders.auth.repository.UserRepository;
 import com.traders.auth.service.MailService;
 import com.traders.auth.service.UserService;
 import com.traders.auth.service.dto.AdminUserDTO;
+import com.traders.common.constants.AppConstants;
+import com.traders.common.constants.AuthoritiesConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.slf4j.Logger;

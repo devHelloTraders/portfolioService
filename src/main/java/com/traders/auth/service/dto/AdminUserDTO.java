@@ -1,8 +1,8 @@
 package com.traders.auth.service.dto;
 
-import com.traders.auth.constants.AppConstants;
 import com.traders.auth.domain.Authority;
 import com.traders.auth.domain.User;
+import com.traders.common.constants.AppConstants;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

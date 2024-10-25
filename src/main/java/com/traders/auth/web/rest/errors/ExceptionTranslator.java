@@ -1,11 +1,11 @@
 package com.traders.auth.web.rest.errors;
 
-import com.traders.auth.appconfig.rest.ProblemDetailWithCause;
-import com.traders.auth.appconfig.util.HeaderUtil;
-import com.traders.auth.constants.ErrorConstants;
-import com.traders.auth.constants.ProfileConstants;
+import com.traders.common.appconfig.rest.ProblemDetailWithCause;
+import com.traders.common.appconfig.util.HeaderUtil;
 import com.traders.auth.exception.BadRequestAlertException;
 import com.traders.auth.web.rest.model.FieldErrorVM;
+import com.traders.common.constants.ErrorConstants;
+import com.traders.common.constants.ProfileConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;

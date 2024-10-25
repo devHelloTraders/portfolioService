@@ -1,8 +1,6 @@
 package com.traders.auth.service;
 
-import com.traders.auth.appconfig.util.RandomUtil;
-import com.traders.auth.constants.AppConstants;
-import com.traders.auth.constants.AuthoritiesConstants;
+import com.traders.common.appconfig.util.RandomUtil;
 import com.traders.auth.domain.Authority;
 import com.traders.auth.domain.User;
 import com.traders.auth.exception.EmailAlreadyUsedException;
@@ -10,9 +8,11 @@ import com.traders.auth.exception.InvalidPasswordException;
 import com.traders.auth.exception.UsernameAlreadyUsedException;
 import com.traders.auth.repository.AuthorityRepository;
 import com.traders.auth.repository.UserRepository;
-import com.traders.auth.security.SecurityUtils;
 import com.traders.auth.service.dto.AdminUserDTO;
 import com.traders.auth.service.dto.UserDTO;
+import com.traders.common.constants.AppConstants;
+import com.traders.common.constants.AuthoritiesConstants;
+import com.traders.common.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;

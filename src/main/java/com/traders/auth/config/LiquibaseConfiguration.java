@@ -1,7 +1,7 @@
 package com.traders.auth.config;
 
-import com.traders.auth.appconfig.liquibase.SpringLiquibaseUtil;
-import com.traders.auth.constants.ProfileConstants;
+import com.traders.common.appconfig.liquibase.SpringLiquibaseUtil;
+import com.traders.common.constants.ProfileConstants;
 import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import javax.sql.DataSource;
 import java.util.concurrent.Executor;
 
 @Configuration
-public class LiquibaseConfiguration {
+public class LiquibaseConfiguration  {
 
     private static final Logger LOG = LoggerFactory.getLogger(LiquibaseConfiguration.class);
 

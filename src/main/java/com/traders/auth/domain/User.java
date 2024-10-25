@@ -1,7 +1,7 @@
 package com.traders.auth.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.traders.auth.constants.AppConstants;
+import com.traders.common.constants.AppConstants;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;

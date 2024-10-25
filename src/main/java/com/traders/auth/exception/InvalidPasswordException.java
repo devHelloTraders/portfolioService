@@ -1,6 +1,6 @@
 package com.traders.auth.exception;
 
-import com.traders.auth.appconfig.rest.ProblemDetailWithCause;
+import com.traders.common.appconfig.rest.ProblemDetailWithCause;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.ErrorResponseException;
 

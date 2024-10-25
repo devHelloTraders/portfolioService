@@ -1,6 +1,6 @@
 package com.traders.auth.web.rest;
 
-import com.traders.auth.appconfig.util.PaginationUtil;
+import com.traders.common.appconfig.util.PaginationUtil;
 import com.traders.auth.service.UserService;
 import com.traders.auth.service.dto.UserDTO;
 import org.slf4j.Logger;
