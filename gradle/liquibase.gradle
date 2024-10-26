@@ -20,7 +20,7 @@ liquibase {
   activities {
     main {
       driver "com.mysql.cj.jdbc.Driver"
-      url "jdbc:mysql://localhost:3306/hello_traders"
+      url "jdbc:mysql://35.224.30.62:3306/hello_traders"
       username "root"
       changelogFile "src/main/resources/config/liquibase/master.xml"
       logLevel "debug"
@@ -28,7 +28,7 @@ liquibase {
     }
     diffLog {
       driver "com.mysql.cj.jdbc.Driver"
-      url "jdbc:mysql://localhost:3306/hello_traders"
+      url "jdbc:mysql://35.224.30.62:3306/hello_traders"
       username "root"
       password "root"
       changelogFile project.ext.diffChangelogFile

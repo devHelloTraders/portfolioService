@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.traders.hello'
-version = '0.0.1'
+version = '0.0.2-SNAPSHOT'
 
 java {
 	toolchain {
@@ -173,10 +173,21 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.named("bootJar") {
+	mainClass = 'com.traders.auth.HellotradersAuthenticationServiceApplication'
+}
+
 task cleanResources(type: Delete) {
 	delete "build/resources"
 }
 
-
+tasks.named('jar') {
+	manifest {
+		attributes(
+				'Implementation-Title': project.name,
+				'Implementation-Version': project.version
+		)
+	}
+}
 compileJava.dependsOn processResources
 processResources.dependsOn bootBuildInfo
