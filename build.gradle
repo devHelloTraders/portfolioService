@@ -11,6 +11,8 @@ group = 'com.traders.hello'
 version = '0.0.2-SNAPSHOT'
 
 java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(23)
 	}
@@ -157,9 +159,11 @@ dependencies {
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	implementation 'com.mysql:mysql-connector-j:9.1.0'
+
 
 	implementation 'com.traders.hello:commonService:0.0.1-SNAPSHOT'
+	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.21.0'
+
 
 }
 

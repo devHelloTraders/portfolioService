@@ -20,7 +20,8 @@ liquibase {
   activities {
     main {
       driver "com.mysql.cj.jdbc.Driver"
-      url "jdbc:mysql://35.224.30.62:3306/hello_traders"
+      //url "jdbc:mysql://35.224.30.62:3306/hello_traders"
+      url "jdbc:mysql://google/hello_traders?cloudSqlInstance=true-oasis-439517-g0:us-central1:hello-traders&socketFactory=com.google.cloud.sql.mysql.SocketFactory"
       username "root"
       changelogFile "src/main/resources/config/liquibase/master.xml"
       logLevel "debug"
@@ -28,7 +29,8 @@ liquibase {
     }
     diffLog {
       driver "com.mysql.cj.jdbc.Driver"
-      url "jdbc:mysql://35.224.30.62:3306/hello_traders"
+      //url "jdbc:mysql://35.224.30.62:3306/hello_traders"
+      url "jdbc:mysql://google/hello_traders?cloudSqlInstance=true-oasis-439517-g0:us-central1:hello-traders&socketFactory=com.google.cloud.sql.mysql.SocketFactory"
       username "root"
       password "root"
       changelogFile project.ext.diffChangelogFile
