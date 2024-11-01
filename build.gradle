@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.traders.hello'
-version = '0.0.2-SNAPSHOT'
+version = '0.0.2-stable'
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
@@ -164,6 +164,12 @@ dependencies {
 	implementation 'com.traders.hello:commonService:0.0.1-SNAPSHOT'
 	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.21.0'
 
+	implementation 'io.opencensus:opencensus-impl:0.31.0'
+	implementation 'io.grpc:grpc-netty:1.54.0' // Use the latest stable version
+	implementation 'io.grpc:grpc-protobuf:1.54.0'
+	implementation 'io.grpc:grpc-stub:1.54.0'
+	implementation 'io.grpc:grpc-context:1.54.0'
+	runtimeOnly 'io.opentelemetry:opentelemetry-opencensus-shim:1.43.0-alpha'
 
 }
 

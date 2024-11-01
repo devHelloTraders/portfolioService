@@ -1,2 +1,9 @@
 runtime: java21
 instance_class: F1
+env_variables:
+  SPRING_PROFILES_ACTIVE: dev
+  #CLOUD_SQL_CONNECTION_STRING: "r2dbc:pool:gcp:<'mysql' or 'postgres'>://<user>:<password>@<connection_name>/<db_name>"
+  CLOUD_SQL_CONNECTION_NAME: "true-oasis-439517-g0:us-central1:hello-traders"
+  DB_NAME: "hello_traders"
+  DB_USER: "root"
+  DB_PASS: "root"

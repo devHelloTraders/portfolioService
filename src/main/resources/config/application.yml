@@ -50,15 +50,25 @@ management:
           - liquibase
   endpoint:
     health:
-      show-details: when_authorized
-      roles: 'ROLE_ADMIN'
+      show-details: always
+      #roles: 'ROLE_ADMIN'
       probes:
         enabled: true
       group:
         liveness:
           include: livenessState
+          path: "/management/health/readiness"
+          interval_sec: 30
+          timeout_sec: 4
+          failure_threshold: 2
+          success_threshold: 2
         readiness:
-          include: readinessState,db
+          include: readinessState
+          path: "/management/health/liveness"
+          interval_sec: 30
+          timeout_sec: 4
+          failure_threshold: 2
+          success_threshold: 2
     jhimetrics:
       enabled: true
   info:
@@ -67,6 +77,8 @@ management:
     env:
       enabled: true
   health:
+    defaults:
+      enabled: false
     mail:
       enabled: false # When using the MailService, configure an SMTP server and set this to true
   prometheus:
