@@ -1,3 +1,12 @@
+buildscript {      // Configuration for building
+	repositories {
+		mavenLocal()
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'com.google.cloud.tools:appengine-gradle-plugin:2.5.0'
+	}
+}
 plugins {
 	id 'java'
 	id "idea"
@@ -14,7 +23,7 @@ java {
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(23)
 	}
 }
 
@@ -44,6 +53,7 @@ ext {
 
 apply plugin: 'io.spring.dependency-management'
 
+apply plugin: 'com.google.cloud.tools.appengine'
 apply from: "gradle/liquibase.gradle"
 
 if (project.hasProperty("prod")) {
@@ -78,7 +88,7 @@ eclipse {
 defaultTasks "bootRun"
 
 springBoot {
-	mainClass = "com.traders.authService.HellotradersAuthenticationServiceApplication"
+	mainClass = "com.traders.auth.HellotradersAuthenticationService"
 }
 
 gitProperties {
@@ -183,21 +193,34 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-tasks.named("bootJar") {
-	mainClass = 'com.traders.auth.HellotradersAuthenticationServiceApplication'
-}
+//bootJar {
+//	mainClass = 'com.traders.auth.HellotradersAuthenticationService'
+//}
+task deployAppEngine(type: Exec) {
+	group = 'deployment'
+	description = 'Deploys the application to Google App Engine'
 
+	// Command to deploy to App Engine
+}
 task cleanResources(type: Delete) {
 	delete "build/resources"
 }
+appengine {
 
-tasks.named('jar') {
-	manifest {
-		attributes(
-				'Implementation-Title': project.name,
-				'Implementation-Version': project.version
-		)
+	deploy {
+		projectId = "true-oasis-439517-g0"
+		version = "001-snapshot"
+		stopPreviousVersion = true  // default - stop the current version
+		promote = true              // default - & make this the current version
 	}
 }
+jar{
+	manifest {
+		attributes(
+				'Main-Class': 'com.traders.auth.HellotradersAuthenticationService'
+					)
+	}
+}
+
 compileJava.dependsOn processResources
 processResources.dependsOn bootBuildInfo

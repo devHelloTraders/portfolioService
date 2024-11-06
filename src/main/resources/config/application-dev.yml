@@ -18,6 +18,7 @@ logging:
     org.hibernate.SQL: DEBUG
     com.traders.authService: DEBUG
 
+
 management:
   zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
     tracing:
@@ -44,23 +45,41 @@ spring:
       sql:
         database-name: hello_traders
 
-#    consul:
-#      config:
-#        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
-#        format: yaml
-#        profile-separator: '-'
-#      discovery:
-#        prefer-ip-address: true
-#        tags:
-#          - profile=${spring.profiles.active}
-#          - git-version=${git.commit.id.describe:}
-#          - git-commit=${git.commit.id.abbrev:}
-#          - git-branch=${git.branch:}
+    consul:
+      config:
+        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
+        format: yaml
+        profile-separator: '-'
+      discovery:
+        register-health-check: true
+        healthCheckPath: /management/health
+        healthCheckInterval: 60s
+#        health-check:
+#          enabled: true
+#          interval: 10s
+#          timeout: 1s
+#          http:
+#            method: GET
+#            path: /management/health
+        enabled: true
+        prefer-ip-address: false
+        hostname: authservice-dot-true-oasis-439517-g0.el.r.appspot.com
+        scheme: https
+        port: 443
+        tags:
+          - profile=${spring.profiles.active}
+          - version='@project.version@'
+          - git-version=${git.commit.id.describe:}
+          - git-commit=${git.commit.id.abbrev:}
+          - git-branch=${git.branch:}
+      host: consul-585407576955.us-central1.run.app
+      port: 443
 #      host: localhost
 #      port: 8500
+      scheme: https
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    #url: jdbc:mysql://35.224.30.62:3306/hello_traders?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    #url: jdbc:mysql://localhost:3306/hello_traders?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     url: jdbc:mysql://google/hello_traders?cloudSqlInstance=true-oasis-439517-g0:us-central1:hello-traders&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=root
     username: root
     password: root

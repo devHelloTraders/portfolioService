@@ -13,13 +13,21 @@ spring:
     active: '@spring.profiles.active@'
   cloud:
     consul:
-      enabled: false
+      enabled: true
       config:
         enabled : false
         fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
         format: yaml
         profile-separator: '-'
       discovery:
+        enabled: true
+        health-check:
+          enabled: true
+          interval: 10s
+          timeout: 1s
+          http:
+            method: GET
+            path: /management/health
         tags:
           - profile=${spring.profiles.active}
           - version='@project.version@'
@@ -28,8 +36,9 @@ spring:
           - git-branch=${git.branch:}
           - context-path=${server.servlet.context-path:}
 
-      host: localhost
-      port: 8500
+      host: consul-585407576955.us-central1.run.app
+      scheme: https
+      port: 443
   docker:
     compose:
       enabled: true

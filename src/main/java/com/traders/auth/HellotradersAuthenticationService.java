@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,14 +23,15 @@ import java.util.Optional;
 @SpringBootApplication
 @EnableJpaRepositories
 @EnableWebSecurity
-public class HellotradersAuthenticationServiceApplication {
+@EnableDiscoveryClient
+public class HellotradersAuthenticationService {
 
 
-	private static final Logger LOG = LoggerFactory.getLogger(HellotradersAuthenticationServiceApplication.class);
+	private static final Logger LOG = LoggerFactory.getLogger(HellotradersAuthenticationService.class);
 
 	private final Environment env;
 
-	public HellotradersAuthenticationServiceApplication(Environment env) {
+	public HellotradersAuthenticationService(Environment env) {
 		this.env = env;
 	}
 
@@ -66,7 +68,7 @@ public class HellotradersAuthenticationServiceApplication {
 	 * @param args the command line arguments.
 	 */
 	public static void main(String[] args) {
-		SpringApplication app = new SpringApplication(HellotradersAuthenticationServiceApplication.class);
+		SpringApplication app = new SpringApplication(HellotradersAuthenticationService.class);
 		DefaultProfileUtil.addDefaultProfile(app);
 		Environment env = app.run(args).getEnvironment();
 		logApplicationStartup(env);

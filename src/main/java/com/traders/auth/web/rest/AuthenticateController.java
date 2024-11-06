@@ -121,4 +121,9 @@ public class AuthenticateController {
             this.idToken = idToken;
         }
     }
+
+    @GetMapping("/greet")
+    public String authorize() {
+        return "Greet";
+    }
 }

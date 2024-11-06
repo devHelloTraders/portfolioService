@@ -114,7 +114,7 @@ spring:
   cloud:
     consul:
       discovery:
-        enabled: false
+        enabled: true
         healthCheckPath: /management/health
         instanceId: authService:${spring.application.instance-id:${random.value}}
         service-name: authService
@@ -241,3 +241,5 @@ config:
 
 
 # application:
+gateway:
+  url: https://gateway-dot-true-oasis-439517-g0.el.r.appspot.com/
