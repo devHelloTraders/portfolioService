@@ -15,4 +15,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "authService"
+rootProject.name = "portfolioService"

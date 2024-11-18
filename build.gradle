@@ -88,7 +88,7 @@ eclipse {
 defaultTasks "bootRun"
 
 springBoot {
-	mainClass = "com.traders.auth.HellotradersAuthenticationService"
+	mainClass = "com.traders.auth.HellotradersPortfolioService"
 }
 
 gitProperties {
@@ -180,6 +180,10 @@ dependencies {
 	implementation 'io.grpc:grpc-stub:1.54.0'
 	implementation 'io.grpc:grpc-context:1.54.0'
 	runtimeOnly 'io.opentelemetry:opentelemetry-opencensus-shim:1.43.0-alpha'
+	implementation 'org.modelmapper:modelmapper:3.2.1'
+
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 
 }
 
@@ -194,7 +198,7 @@ tasks.named('test') {
 }
 
 //bootJar {
-//	mainClass = 'com.traders.auth.HellotradersAuthenticationService'
+//	mainClass = 'com.traders.auth.HellotradersPortfolioService'
 //}
 task deployAppEngine(type: Exec) {
 	group = 'deployment'
@@ -217,7 +221,7 @@ appengine {
 jar{
 	manifest {
 		attributes(
-				'Main-Class': 'com.traders.auth.HellotradersAuthenticationService'
+				'Main-Class': 'com.traders.auth.HellotradersPortfolioService'
 					)
 	}
 }

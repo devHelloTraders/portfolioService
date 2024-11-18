@@ -34,7 +34,7 @@ liquibase {
       username "root"
       password "root"
       changelogFile project.ext.diffChangelogFile
-      referenceUrl "hibernate:spring:com.traders.authService.domain?dialect=org.hibernate.dialect.MySQL8Dialect&hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy"
+      referenceUrl "hibernate:spring:com.traders.portfolioService.domain?dialect=org.hibernate.dialect.MySQL8Dialect&hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy"
       logLevel "debug"
       classpath "$buildDir/classes/java/main"
     }

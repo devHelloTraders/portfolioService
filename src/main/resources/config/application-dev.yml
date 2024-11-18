@@ -14,9 +14,9 @@
 logging:
   level:
     ROOT: DEBUG
-    com.traders.authService.appconfig: DEBUG
+    com.traders.portfolioService.appconfig: DEBUG
     org.hibernate.SQL: DEBUG
-    com.traders.authService: DEBUG
+    com.traders.portfolioService: DEBUG
 
 
 management:
@@ -28,6 +28,30 @@ management:
       probability: 1.0 # report 100% of traces
 
 spring:
+  redis:
+    host: redis-16705.c244.us-east-1-2.ec2.redns.redis-cloud.com
+    port: 16705
+    password: HelloTraders@123
+    username: default
+    database: 0
+    jedis:
+      pool:
+        max-active: 10
+        max-idle: 5
+        min-idle: 1
+        max-wait: -1
+        test-on-borrow: true
+
+  jpa:
+    show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+      use_sql_comments: true
+    logging:
+      level:
+        org.hibernate.SQL: DEBUG
+        org.hibernate.type.descriptor.sql: TRACE
   devtools:
     restart:
       enabled: true
@@ -54,16 +78,16 @@ spring:
         register-health-check: true
         healthCheckPath: /management/health
         healthCheckInterval: 60s
-#        health-check:
-#          enabled: true
-#          interval: 10s
-#          timeout: 1s
-#          http:
-#            method: GET
-#            path: /management/health
-        enabled: true
+        health-check:
+          enabled: true
+          interval: 10s
+          timeout: 1s
+          http:
+            method: GET
+            path: /management/health
+        enabled: false
         prefer-ip-address: false
-        hostname: authservice-dot-true-oasis-439517-g0.el.r.appspot.com
+        hostname: portfolioService-dot-true-oasis-439517-g0.el.r.appspot.com
         scheme: https
         port: 443
         tags:
@@ -104,7 +128,7 @@ spring:
 #      initialize-schema: always
 
 server:
-  port: 8081
+  port: 8086
   # make sure requests the proxy uri instead of the server one
   forward-headers-strategy: native
 
@@ -114,7 +138,7 @@ server:
 config:
   cache: # Cache configuration
     redis: # Redis configuration
-      expiration: 3600 # By default objects stay 1 hour (in seconds) in the cache
+      expiration: -1 # By default objects stay 1 hour (in seconds) in the cache
       server: redis://default:HelloTraders%40123@redis-16705.c244.us-east-1-2.ec2.redns.redis-cloud.com:16705
       cluster: false
 #        server: redis://localhost:6379,redis://localhost:16379,redis://localhost:26379
