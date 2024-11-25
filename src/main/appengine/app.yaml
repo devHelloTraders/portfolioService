@@ -1,15 +1,25 @@
 runtime: java21
+env: standard
 instance_class: F2
-service: portfolioService
-automatic_scaling:
-  min_idle_instances: 1
+service: portfolioservice
 handlers:
   - url: /.*
     script: auto
+  - url: .*
+    script: auto
 env_variables:
-  SPRING_PROFILES_ACTIVE: dev
-  #CLOUD_SQL_CONNECTION_STRING: "r2dbc:pool:gcp:<'mysql' or 'postgres'>://<user>:<password>@<connection_name>/<db_name>"
-  CLOUD_SQL_CONNECTION_NAME: "true-oasis-439517-g0:us-central1:hello-traders"
+  CLOUD_SQL_CONNECTION_NAME: 'true-oasis-439517-g0:us-central1:hello-traders'
   DB_NAME: "hello_traders"
-  DB_USER: "root"
   DB_PASS: "root"
+  DB_USER: "root"
+  SPRING_PROFILES_ACTIVE: dev
+readiness_check:
+  check_interval_sec: 5
+  timeout_sec: 4
+  app_start_timeout_sec: 300
+  path: /management/health/readiness
+automatic_scaling:
+  min_idle_instances: 1
+  max_idle_instances: automatic
+  min_pending_latency: automatic
+  max_pending_latency: automatic

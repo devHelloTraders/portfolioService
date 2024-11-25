@@ -15,7 +15,7 @@ logging:
   level:
     ROOT: DEBUG
     com.traders.portfolioService.appconfig: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.springframework.boot.actuate: DEBUG
     com.traders.portfolioService: DEBUG
 
 
@@ -28,30 +28,6 @@ management:
       probability: 1.0 # report 100% of traces
 
 spring:
-  redis:
-    host: redis-16705.c244.us-east-1-2.ec2.redns.redis-cloud.com
-    port: 16705
-    password: HelloTraders@123
-    username: default
-    database: 0
-    jedis:
-      pool:
-        max-active: 10
-        max-idle: 5
-        min-idle: 1
-        max-wait: -1
-        test-on-borrow: true
-
-  jpa:
-    show-sql: true
-  properties:
-    hibernate:
-      format_sql: true
-      use_sql_comments: true
-    logging:
-      level:
-        org.hibernate.SQL: DEBUG
-        org.hibernate.type.descriptor.sql: TRACE
   devtools:
     restart:
       enabled: true
@@ -81,13 +57,13 @@ spring:
         health-check:
           enabled: true
           interval: 10s
-          timeout: 1s
+          timeout: 3s
           http:
             method: GET
             path: /management/health
         enabled: false
         prefer-ip-address: false
-        hostname: portfolioService-dot-true-oasis-439517-g0.el.r.appspot.com
+        hostname: portfolioservice-dot-true-oasis-439517-g0.el.r.appspot.com
         scheme: https
         port: 443
         tags:
@@ -128,7 +104,7 @@ spring:
 #      initialize-schema: always
 
 server:
-  port: 8086
+  port: ${PORT:8080}
   # make sure requests the proxy uri instead of the server one
   forward-headers-strategy: native
 

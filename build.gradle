@@ -17,7 +17,7 @@ plugins {
 }
 
 group = 'com.traders.hello'
-version = '0.0.2-stable'
+version = '0.0.3-final'
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
@@ -88,7 +88,7 @@ eclipse {
 defaultTasks "bootRun"
 
 springBoot {
-	mainClass = "com.traders.auth.HellotradersPortfolioService"
+	mainClass = "com.traders.portfolio.HellotradersPortfolioService"
 }
 
 gitProperties {
@@ -102,19 +102,14 @@ tasks.withType(com.gorylenko.GenerateGitPropertiesTask).configureEach {
 
 configurations {
 	providedRuntime
-	implementation.exclude module: "spring-boot-starter-tomcat"
+	//implementation.exclude module: "spring-boot-starter-tomcat"
 }
 dependencies {
 	implementation "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
 	implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
 
-	implementation "org.springframework.boot:spring-boot-starter-undertow"
-	modules {
-		module("org.springframework.boot:spring-boot-starter-tomcat") {
-			replacedBy("org.springframework.boot:spring-boot-starter-undertow", "Use Undertow instead of Tomcat")
-		}
-	}
 	implementation "io.micrometer:micrometer-registry-prometheus-simpleclient"
+	runtimeOnly "io.netty:netty-tcnative-boringssl-static"
 	implementation "jakarta.annotation:jakarta.annotation-api"
 	implementation "org.apache.commons:commons-lang3"
 	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
@@ -193,12 +188,12 @@ dependencyManagement {
 	}
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+task cleanResources(type: Delete) {
+	delete "build/resources"
 }
 
 //bootJar {
-//	mainClass = 'com.traders.auth.HellotradersPortfolioService'
+//	mainClass = 'com.traders.portfolio.HellotradersPortfolioService'
 //}
 task deployAppEngine(type: Exec) {
 	group = 'deployment'
@@ -206,9 +201,7 @@ task deployAppEngine(type: Exec) {
 
 	// Command to deploy to App Engine
 }
-task cleanResources(type: Delete) {
-	delete "build/resources"
-}
+
 appengine {
 
 	deploy {
@@ -221,8 +214,8 @@ appengine {
 jar{
 	manifest {
 		attributes(
-				'Main-Class': 'com.traders.auth.HellotradersPortfolioService'
-					)
+				'Main-Class': 'com.traders.portfolio.HellotradersPortfolioService'
+		)
 	}
 }
 

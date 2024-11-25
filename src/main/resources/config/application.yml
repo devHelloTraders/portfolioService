@@ -110,14 +110,13 @@ management:
 
 spring:
   application:
-    name: portfolioService
+    name: portfolioservice
   cloud:
     consul:
       discovery:
-        enabled: true
         healthCheckPath: /management/health
-        instanceId: portfolioService:${spring.application.instance-id:${random.value}}
-        service-name: portfolioService
+        instanceId: portfolioservice
+        service-name: portfolioservice
       config:
         watch:
           enabled: false
@@ -180,13 +179,13 @@ spring:
           authorities-claim-name: auth
   task:
     execution:
-      thread-name-prefix: portfolioService-task-
+      thread-name-prefix: portfolioservice-task-
       pool:
         core-size: 2
         max-size: 50
         queue-capacity: 10000
     scheduling:
-      thread-name-prefix: portfolioService-scheduling-
+      thread-name-prefix: portfolioservice-scheduling-
       pool:
         size: 2
   thymeleaf:
@@ -214,7 +213,7 @@ info:
 
 config:
   clientApp:
-    name: 'portfolioService'
+    name: 'portfolioservice'
   # By default CORS is disabled. Uncomment to enable.
   # cors:
   #   allowed-origins: "http://localhost:8100,http://localhost:9000"
@@ -223,12 +222,12 @@ config:
   #   allow-credentials: true
   #   max-age: 1800
   mail:
-    from: portfolioService@localhost
+    from: portfolioservice@localhost
   api-docs:
     default-include-pattern: /api/**
     management-include-pattern: /management/**
-    title: portfolioService API
-    description: portfolioService API documentation
+    title: portfolioservice API
+    description: portfolioservice API documentation
     version: 0.0.1
     terms-of-service-url:
     contact-name:
