@@ -53,7 +53,7 @@ spring:
       discovery:
         register-health-check: true
         healthCheckPath: /management/health
-        healthCheckInterval: 60s
+        healthCheckInterval: 30s
         health-check:
           enabled: true
           interval: 10s
@@ -61,7 +61,7 @@ spring:
           http:
             method: GET
             path: /management/health
-        enabled: false
+        enabled: true
         prefer-ip-address: false
         hostname: portfolioservice-dot-true-oasis-439517-g0.el.r.appspot.com
         scheme: https

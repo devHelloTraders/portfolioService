@@ -1,6 +1,5 @@
 package com.traders.portfolio.config;
 
-import com.traders.common.properties.ConfigProperties;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

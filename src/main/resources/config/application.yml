@@ -20,7 +20,13 @@ spring:
       on-profile: '!api-docs'
 springdoc:
   api-docs:
-    enabled: false
+    enabled: true
+  swagger-ui:
+    enabled: true
+  show-actuator: true
+  packages-to-scan: '*'
+  swagger-ui.path : /swagger-ui.html
+
 ---
 feign:
   circuitbreaker:
