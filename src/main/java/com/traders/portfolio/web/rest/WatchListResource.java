@@ -2,21 +2,30 @@ package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.HeaderUtil;
 import com.traders.common.constants.AuthoritiesConstants;
+import com.traders.common.appconfig.util.PaginationUtil;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.service.WatchListService;
+import com.traders.portfolio.service.WatchListStockService;
+import com.traders.portfolio.service.dto.TransactionDTO;
 import com.traders.portfolio.service.dto.WatchListDTO;
 import com.traders.portfolio.service.dto.WatchListStockDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for managing the current user's account.
@@ -26,72 +35,96 @@ import java.util.List;
 public class WatchListResource {
     private static final Logger LOG = LoggerFactory.getLogger(WatchListResource.class);
     private final WatchListService watchListService;
+    private final WatchListStockService watchListStockService;
     @Value("${config.clientApp.name}")
     private String applicationName;
 
-    public WatchListResource(WatchListService watchListService) {
+    private static final List<String> ALLOWED_ORDERED_PROPERTIES = List.of("id", "userId", "orderNum","stock.id", "stock.tradingSymbol","stock.instrumentToken",
+            "stock.exchange","stock.segment","stock.expiry","stock.lastPrice");
+
+    public WatchListResource(WatchListService watchListService, WatchListStockService watchListStockService) {
 
         this.watchListService = watchListService;
+        this.watchListStockService = watchListStockService;
     }
 
 
-    @GetMapping("/watchlist")
-    public ResponseEntity<WatchListDTO> getWatchList() {
-        LOG.debug("REST request to get watchlist");
-        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        return new ResponseEntity<>(watchListService.getWatchList(userId),
-                HeaderUtil.createAlert(applicationName, "watchlist retrived for user: "+userId,userId),
-                HttpStatus.OK);
-    }
+//    @GetMapping("/watchlist")
+//    public ResponseEntity<WatchListDTO> getWatchList() {
+//        LOG.debug("REST request to get watchlist");
+//        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+//        return new ResponseEntity<>(watchListService.getWatchList(userId),
+//                HeaderUtil.createAlert(applicationName, "watchlist retrived for user: "+userId,userId),
+//                HttpStatus.OK);
+//
+//    }
 
-    @GetMapping("/watchlistForUser")
-    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<WatchListDTO> getWatchListForUser(String userId) {
+    @GetMapping("/admin/watchlistForUser")
+    public ResponseEntity<WatchListDTO> getWatchListForUser(String userId,Pageable pageable,@RequestParam(required = false)  Map<String,Object> filters) {
         LOG.debug("REST request to get watchlist for user from admin");
-        return new ResponseEntity<>(watchListService.getWatchList(userId),
-                HeaderUtil.createAlert(applicationName, "watchlist retrived for user: "+userId,userId),
-                HttpStatus.OK);
+
+        WatchListDTO watchListDTO = watchListService.getWatchList(userId);
+        final Page<WatchListStockDTO> page = watchListStockService.getFilterWatchListStocks(filters,pageable);
+        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        watchListDTO.setWatchListStocks(page.getContent());
+        return new ResponseEntity<>(watchListDTO, headers, HttpStatus.OK);
+
     }
 
 
     @DeleteMapping("/watchlist/remove")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeFromWatchList(@RequestBody List<Long> stocksToDelete) {
+    public  ResponseEntity<WatchListDTO>  removeFromWatchList(@RequestBody List<Long> stocksToDelete,Pageable pageable,@RequestParam(required = false)  Map<String,Object> filters) {
         LOG.debug("REST request to remove from watchlist");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         long id;
         if((id = CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Watchlist service", "Not valid user passed in request");
         watchListService.removeFromWatchList(userId,stocksToDelete);
+        return getWatchList(pageable,filters);
     }
 
     @PostMapping("/watchlist/add")
-    public ResponseEntity<WatchListDTO> addStockInWatchlist(@RequestBody List<Long> stocksToAdd) {
+    public ResponseEntity<WatchListDTO> addStockInWatchlist(@RequestBody List<Long> stocksToAdd,Pageable pageable,@RequestParam(required = false)  Map<String,Object> filters) {
         LOG.debug("REST request to Add stock in watchlist");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         long id;
         if((id = CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Watchlist service", "Not valid user passed in request");
-        ;
-        return new ResponseEntity<>(watchListService.addStockInWatchList(userId,stocksToAdd),
-                HeaderUtil.createAlert(applicationName, "watchlist updated for user: "+userId,userId),
-                HttpStatus.OK);
+        watchListService.addStockInWatchList(userId,stocksToAdd);
+        return getWatchList(pageable,filters);
     }
 
     @PostMapping("/watchlist/update")
-    public ResponseEntity<WatchListDTO> updateWatchList(@RequestBody List<Long> updatedStockIdList) {
+    public ResponseEntity<WatchListDTO> updateWatchList(@RequestBody List<Long> updatedStockIdList,Pageable pageable,@RequestParam(required = false)  Map<String,Object> filters) {
         LOG.debug("REST request to update stock in watchlist");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         long id;
         if((id = CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Watchlist service", "Not valid user passed in request");
-        ;
-        return new ResponseEntity<>(watchListService.updateWatchlist(userId,updatedStockIdList),
-                HeaderUtil.createAlert(applicationName, "watchlist updated for user: "+userId,userId),
-                HttpStatus.OK);
+        watchListService.updateWatchlist(userId,updatedStockIdList);
+        return getWatchList(pageable,filters);
     }
 
 
 
+    @GetMapping("/watchlist")
+    public ResponseEntity<WatchListDTO> getWatchList(Pageable pageable,@RequestParam(required = false)  Map<String,Object> filters) {
+        LOG.debug("REST request to get watchlist");
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+
+        if (!PaginationUtil.onlyContainsAllowedProperties(pageable,ALLOWED_ORDERED_PROPERTIES)) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        WatchListDTO watchListDTO = watchListService.getWatchList(userId);
+        filters.put("watchList.id",watchListDTO.getId());
+        final Page<WatchListStockDTO> page = watchListStockService.getFilterWatchListStocks(filters,pageable);
+        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        watchListDTO.setWatchListStocks(page.getContent());
+        return new ResponseEntity<>(watchListDTO, headers, HttpStatus.OK);
+    }
 
 }

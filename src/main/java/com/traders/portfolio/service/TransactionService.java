@@ -6,14 +6,19 @@ import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.TransactionRepository;
 import com.traders.portfolio.service.dto.TransactionDTO;
+import com.traders.portfolio.service.specification.JPAFilterSpecification;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -30,16 +35,20 @@ public class TransactionService {
     }
 
     @Transactional
-    public List<TransactionDTO> getTransactions(@NotNull String userId){
+    public Page<TransactionDTO> getTransactions(@NotNull String userId,Pageable pageable){
         long id;
         if((id = CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Transaction Service", "Not valid user passed in request");
 
-        return getTransactionDTOList(getTransaction(id));
+        return getTransaction(id,pageable);
     }
 
-    private List<Transaction> getTransaction(long id){
-        return transactionRepository.findByCreatedBy(String.valueOf(id));
+    private Page<TransactionDTO> getTransaction(long id, Pageable pageable){
+        return transactionRepository.findByCreatedBy(String.valueOf(id),pageable).map(this::translateToDto);
+    }
+
+    public Page<TransactionDTO> getAllTransaction(Pageable pageable){
+        return transactionRepository.findAll(pageable).map(this::translateToDto);
     }
     private List<TransactionDTO> getTransactionDTOList(List<Transaction> transaction){
         List<TransactionDTO> transactionDetailsList = new ArrayList<>();
@@ -49,6 +58,13 @@ public class TransactionService {
             transactionDetailsList.add(transactionDetails);
         });
         return transactionDetailsList;
+    }
+
+    private TransactionDTO translateToDto(Transaction transaction) {
+        TransactionDTO transactionDetails = new TransactionDTO();
+        modelMapper.map(transaction, transactionDetails);
+        return transactionDetails;
+
     }
 
     private Transaction getTransactionFromDTO(TransactionDTO transactionDTO){
@@ -72,6 +88,7 @@ public class TransactionService {
     public void updateTransactionStatus(@Valid  Long transactionId, @NotNull TransactionStatus status){
         Transaction transaction = getTransactionById(transactionId).orElseThrow(()->
          new BadRequestAlertException("Invalid Transaction details", "Transaction Service", "Not valid Transaction id passed in request"));
+        transaction.setTransactionStatus(status);
         transaction.setCompletedTimestamp(status.completedTime());
         transaction.setCompletedQuantity(status.getQuantity());
         saveTransaction(transaction);
@@ -83,5 +100,12 @@ public class TransactionService {
 
     private Transaction saveTransaction(Transaction transaction){
         return transactionRepository.save(transaction);
+    }
+
+    public Page<TransactionDTO> getFilteredTransactions(String userId, Map<String, Object> filters, Pageable pageable) {
+        if(userId !=null)
+            filters.put("createdBy", userId);
+        Specification<Transaction> specification = JPAFilterSpecification.setFilter(filters);
+        return transactionRepository.findAll(specification, pageable).map(this::translateToDto);
     }
 }

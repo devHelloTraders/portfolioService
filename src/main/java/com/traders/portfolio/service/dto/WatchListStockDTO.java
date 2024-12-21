@@ -4,9 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -14,8 +12,8 @@ public class WatchListStockDTO implements Serializable {
 
     private long id;
   //  private int orderNum;
-    private StockDTO stock;
-    private Double currentPrice;
+    private StockDTO stock = new StockDTO();
+    //private MarketQuotes stockTick;
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

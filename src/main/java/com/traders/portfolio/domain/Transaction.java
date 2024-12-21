@@ -29,6 +29,7 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     private TransactionStatus transactionStatus;
 
     @ManyToOne
+    @JoinColumn(name = "stock_id", referencedColumnName = "id")
     private Stock stock;
 
     @Override

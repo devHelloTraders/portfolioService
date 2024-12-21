@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,10 +22,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
-@SpringBootApplication
 @EnableJpaRepositories
 @EnableWebSecurity
 @EnableDiscoveryClient
+@SpringBootApplication(exclude = LiquibaseAutoConfiguration.class)
+@EnableFeignClients
 public class HellotradersPortfolioService {
 
 

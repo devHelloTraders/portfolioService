@@ -1,5 +1,6 @@
 package com.traders.portfolio.config;
 
+import com.traders.common.config.RedissonConfig;
 import com.traders.common.properties.ConfigProperties;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.cache.annotation.EnableCaching;
@@ -9,6 +10,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableCaching
 public class CacheConfiguration extends com.traders.common.config.CacheConfiguration{
+    public CacheConfiguration(RedissonConfig redissonConfig) {
+        super(redissonConfig);
+    }
 
 //    @Bean
 //    public ConfigProperties getConfigProperties(){

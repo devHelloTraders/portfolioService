@@ -8,11 +8,11 @@ handlers:
   - url: .*
     script: auto
 env_variables:
-  CLOUD_SQL_CONNECTION_NAME: 'true-oasis-439517-g0:us-central1:hello-traders'
-  DB_NAME: "hello_traders"
-  DB_PASS: "root"
-  DB_USER: "root"
-  SPRING_PROFILES_ACTIVE: dev
+#  CLOUD_SQL_CONNECTION_NAME: 'true-oasis-439517-g0:us-central1:hello-traders'
+#  DB_NAME: "hello_traders"
+#  DB_PASS: "system"
+#  DB_USER: "systemuser"
+#  SPRING_PROFILES_ACTIVE: dev
 readiness_check:
   check_interval_sec: 5
   timeout_sec: 4

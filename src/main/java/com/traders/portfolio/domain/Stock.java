@@ -3,21 +3,64 @@ package com.traders.portfolio.domain;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Set;
 
 @Entity
-@Table(name = "stock_details")
+@Table(name = "stock_details", uniqueConstraints = @UniqueConstraint(columnNames = {"symbol", "exchange"}))
+@IdClass(StockId.class)
 public class Stock extends AbstractAuditingEntity<Long> implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    //@GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(updatable = false, nullable = false)
     private Long id;
-    private String symbol;
     private Double lastKnownPrice;
-    private String currentPriceKey;
+
+
+    @Column(name = "instrument_token", nullable = false)
+    private long instrumentToken;
+
+    @Column(name = "exchange_token", nullable = false)
+    private long exchangeToken;
+
+    @Id
+    @Column(name = "symbol", nullable = false)
+    private String tradingSymbol;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "last_price")
+    private double lastPrice;
+
+    @Column(name = "tick_size")
+    private double tickSize;
+
+    @Column(name = "instrument_type")
+    private String instrumentType;
+
+    @Column(name = "segment")
+    private String segment;
+
+    @Id
+    @Column(name = "exchange", nullable = false)
+    private String exchange;
+
+    @Column(name = "strike")
+    private String strike;
+
+    @Column(name = "lot_size")
+    private int lotSize;
+
+    @Column(name = "expiry", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date expiry;
+
 
     @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
     private Set<Transaction> transactions;
+    @Column(name = "isActive")
+    private Boolean isActive;
 
     @Override
     public Long getId() {
@@ -28,12 +71,12 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
         this.id = id;
     }
 
-    public String getSymbol() {
-        return symbol;
+    public String getTradingSymbol() {
+        return tradingSymbol;
     }
 
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
+    public void setTradingSymbol(String tradingSymbol) {
+        this.tradingSymbol = tradingSymbol;
     }
 
     public Double getLastKnownPrice() {
@@ -44,12 +87,113 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
         this.lastKnownPrice = lastKnownPrice;
     }
 
-    public String getCurrentPriceKey() {
-        return currentPriceKey;
+
+    public long getInstrumentToken() {
+        return instrumentToken;
     }
 
-    public void setCurrentPriceKey(String currentPriceKey) {
-        this.currentPriceKey = currentPriceKey;
+    public long getExchangeToken() {
+        return exchangeToken;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public double getLastPrice() {
+        return lastPrice;
+    }
+
+    public double getTickSize() {
+        return tickSize;
+    }
+
+    public String getInstrumentType() {
+        return instrumentType;
+    }
+
+    public String getSegment() {
+        return segment;
+    }
+
+    public String getExchange() {
+        return exchange;
+    }
+
+    public String getStrike() {
+        return strike;
+    }
+
+    public int getLotSize() {
+        return lotSize;
+    }
+
+    public Date getExpiry() {
+        return expiry;
+    }
+
+    public Set<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    public void setInstrumentToken(long instrumentToken) {
+        this.instrumentToken = instrumentToken;
+    }
+
+    public void setExchangeToken(long exchangeToken) {
+        this.exchangeToken = exchangeToken;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLastPrice(double lastPrice) {
+        this.lastPrice = lastPrice;
+    }
+
+    public void setTickSize(double tickSize) {
+        this.tickSize = tickSize;
+    }
+
+    public void setInstrumentType(String instrumentType) {
+        this.instrumentType = instrumentType;
+    }
+
+    public void setSegment(String segment) {
+        this.segment = segment;
+    }
+
+    public void setExchange(String exchange) {
+        this.exchange = exchange;
+    }
+
+    public void setStrike(String strike) {
+        this.strike = strike;
+    }
+
+    public void setLotSize(int lotSize) {
+        this.lotSize = lotSize;
+    }
+
+    public void setExpiry(Date expiry) {
+        this.expiry = expiry;
+    }
+
+    public void setTransactions(Set<Transaction> transactions) {
+        this.transactions = transactions;
+    }
+
+
+    public Boolean getActive() {
+        return isActive;
+    }
+
+    public void setActive(Boolean active) {
+        isActive = active;
+    }
+
+    public Long getCurrentPriceKey() {
+        return this.getInstrumentToken();
+    }
 }

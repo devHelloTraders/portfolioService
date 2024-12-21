@@ -27,6 +27,7 @@ public class WatchList extends AbstractAuditingEntity<Long> implements Serializa
 
     @OneToMany(mappedBy = "watchList", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderNum ASC")
+    @Transient
     private List<WatchlistStock> stocks = new ArrayList<>();
 
     @Override

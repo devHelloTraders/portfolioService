@@ -14,7 +14,7 @@ public class WatchlistStock extends AbstractAuditingEntity<Long> implements Seri
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String currentPriceKey;
+    private Long currentPriceKey;
     private Long userId;
    private int orderNum;
 
@@ -43,11 +43,11 @@ public class WatchlistStock extends AbstractAuditingEntity<Long> implements Seri
         this.stock = stock;
     }
 
-    public String getCurrentPriceKey() {
+    public Long getCurrentPriceKey() {
         return currentPriceKey;
     }
 
-    public void setCurrentPriceKey(String currentPriceKey) {
+    public void setCurrentPriceKey(Long currentPriceKey) {
         this.currentPriceKey = currentPriceKey;
     }
 

@@ -8,6 +8,9 @@ import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.WatchListRepository;
 import com.traders.portfolio.service.dto.WatchListDTO;
 import com.traders.portfolio.utils.CustomSorter;
+import com.traders.portfolio.web.rest.fign.DhanFeignService;
+import com.traders.portfolio.web.rest.fign.DhanFignClient;
+import com.traders.portfolio.web.rest.model.DhanRequest;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -20,15 +23,16 @@ import java.util.Optional;
 public class WatchListService {
 
     private final WatchListRepository watchListRepository;
-    private final RedisService redisService;
     private final StockService stockService;
     private final ModelMapper modelMapper;
-
-    public WatchListService(WatchListRepository watchListRepository, RedisService redisService, StockService stockService, ModelMapper modelMapper) {
+    private final WatchListStockService watchListStockService;
+    private final DhanFeignService dhanFignClient;
+    public WatchListService(WatchListRepository watchListRepository, StockService stockService, ModelMapper modelMapper, WatchListStockService watchListStockService, DhanFeignService dhanFignClient) {
         this.watchListRepository = watchListRepository;
-        this.redisService = redisService;
         this.stockService = stockService;
         this.modelMapper = modelMapper;
+        this.watchListStockService = watchListStockService;
+        this.dhanFignClient = dhanFignClient;
     }
     @Transactional
     public WatchListDTO getWatchList(String userId){
@@ -49,8 +53,8 @@ public class WatchListService {
         var watchList = getWatchList(id)
                         .orElseThrow(()->
                                 new BadRequestAlertException("Invalid User details", "Watchlist service", "No watchlist is associated with user"));
-
-        var deletedStocks = watchList.getStocks()
+        var watchListStock = watchListStockService.getAllWatchlistStock(watchList.getId());
+        var deletedStocks = watchListStock
                                      .stream()
                                      .filter(stock->stocksToDelete.contains(stock.getId()))
                                      .map(stock -> {
@@ -62,29 +66,36 @@ public class WatchListService {
             throw new BadRequestAlertException("Invalid Stock details", "Watchlist service", "Not valid stock details passed in request");
         watchList.getStocks().removeAll(deletedStocks);
         saveWatchList(watchList);
+        DhanRequest request = DhanRequest.get();
+        deletedStocks.stream().map(WatchlistStock::getStock).forEach(stock->{
+            request.removeInstrument(DhanRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
+
+        });
+        dhanFignClient.subScribeInstruments(request);
     }
 
     @Transactional
-    public WatchListDTO addStockInWatchList(String userId, List<Long> stocksIdsToAdd){
+    public void addStockInWatchList(String userId, List<Long> stocksIdsToAdd){
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Watchlist service", "Not valid user passed in request");
 
        var watchList = getWatchList(id).orElseGet(()->new WatchList(id));
-
-       var updatedStocks = watchList.getStocks()
+        List<WatchlistStock> watchListStocks = watchList.getId() !=null ?
+                watchListStockService.getAllWatchlistStock(watchList.getId()): new ArrayList<>();
+       var updatedStocks = watchListStocks
                 .stream()
-                .filter(stock->stocksIdsToAdd.contains(stock.getId()))
+                .filter(stock->stocksIdsToAdd.contains(stock.getStock().getId()))
                 .map(WatchlistStock::getStock)
                 .map(Stock::getId)
                 .toList();
        stocksIdsToAdd.removeAll(updatedStocks);
-       watchList.getStocks().addAll(getWatchListStock(watchList,stocksIdsToAdd));
-       return getWatchListDTO(saveWatchList(watchList));
+       watchList.setStocks(getWatchListStock(watchList,watchListStocks,stocksIdsToAdd));
+       saveWatchList(watchList);
     }
 
     @Transactional
-    public WatchListDTO updateWatchlist(String userId, List<Long> updatedStockIdList){
+    public void updateWatchlist(String userId, List<Long> updatedStockIdList){
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Watchlist service", "Not valid user passed in request");
@@ -100,27 +111,35 @@ public class WatchListService {
             throw new BadRequestAlertException("Invalid stock list", "Watchlist service", "Not valid stock list for re arranging watchlist");
         //watchList.setStocks(getWatchListStock(watchList,updatedStockIdList));
         CustomSorter.sortById(watchList.getStocks(), updatedStockIdList, WatchlistStock::getId, Optional.of(WatchlistStock::setOrderNum));
-        return getWatchListDTO(saveWatchList(watchList));
+        saveWatchList(watchList);
+        //return getWatchListDTO(saveWatchList(watchList));
     }
 
     private WatchListDTO getWatchListDTO(WatchList watchList){
         WatchListDTO watchListDTO = new WatchListDTO();
         modelMapper.map(watchList,watchListDTO);
-        watchListDTO.getWatchListStocks()
-                .forEach(stock->stock.setCurrentPrice(redisService.getDoubleValue(stock.getStock().getCurrentPriceKey())));
+//        watchListDTO.getWatchListStocks()
+//                .forEach(stock-> {
+//                    stock.getStock().setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getStock().getInstrumentToken())));
+//                    stock.getStock().updatePrice();
+//                });
 
         return watchListDTO;
     }
 
-    private List<WatchlistStock> getWatchListStock(WatchList watchList,List<Long> stockIdList){
-        List<WatchlistStock> watchlistStocks = new ArrayList<>();
+    private List<WatchlistStock> getWatchListStock(WatchList watchList,List<WatchlistStock> watchlistStocks,List<Long> stockIdList){
+       if(stockIdList.isEmpty())
+           return new ArrayList<>();
+        DhanRequest request = DhanRequest.get();
         stockService.getStocks(stockIdList).forEach(
                 stock->{
                     WatchlistStock watchlistStock = new WatchlistStock();
                     watchlistStock.setStock(stock);
                     watchlistStock.setWatchList(watchList);
                     watchlistStocks.add(watchlistStock);
+                    request.addInstrument(DhanRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
         });
+        dhanFignClient.subScribeInstruments(request);
         return watchlistStocks;
     }
 
@@ -128,7 +147,10 @@ public class WatchListService {
     private Optional<WatchList> getWatchList(long userId){
         return watchListRepository.findByUserId(userId);
     }
-    private WatchList saveWatchList(WatchList watchList){
-        return watchListRepository.save(watchList);
+    private void saveWatchList(WatchList watchList){
+        watchListRepository.save(watchList);
+         watchListStockService.saveWatchlist(watchList.getStocks());
     }
+
+
 }
