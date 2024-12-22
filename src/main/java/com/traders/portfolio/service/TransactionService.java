@@ -1,6 +1,8 @@
 package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
+import com.traders.portfolio.domain.Portfolio;
+import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
@@ -81,16 +83,19 @@ public class TransactionService {
 
         Transaction transaction = getTransactionFromDTO(transactionDTO);
         transaction.getOrderType().setQuantity(transactionDTO.getCompletedQuantity());
-       // saveTransaction(transaction);
         portfolioService.addTransactionToPortfolio(id, transaction);
     }
-
+    @Transactional
     public void updateTransactionStatus(@Valid  Long transactionId, @NotNull TransactionStatus status){
         Transaction transaction = getTransactionById(transactionId).orElseThrow(()->
          new BadRequestAlertException("Invalid Transaction details", "Transaction Service", "Not valid Transaction id passed in request"));
-        transaction.setTransactionStatus(status);
+        if(transaction.getTransactionStatus()==TransactionStatus.COMPLETED || transaction.getTransactionStatus()==TransactionStatus.CANCELLED)
+           throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
+
         transaction.setCompletedTimestamp(status.completedTime());
-        transaction.setCompletedQuantity(status.getQuantity());
+        transaction.setCompletedPrice(status.getCompletedPrice());
+        transaction.setTransactionStatus(status);
+        transaction.getPortfolioStock().addQuantity(transaction.getCompletedQuantity(),transaction.getCompletedPrice());
         saveTransaction(transaction);
     }
 
@@ -101,6 +106,7 @@ public class TransactionService {
     private Transaction saveTransaction(Transaction transaction){
         return transactionRepository.save(transaction);
     }
+
 
     public Page<TransactionDTO> getFilteredTransactions(String userId, Map<String, Object> filters, Pageable pageable) {
         if(userId !=null)

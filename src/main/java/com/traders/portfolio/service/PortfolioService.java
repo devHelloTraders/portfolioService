@@ -5,6 +5,7 @@ import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Portfolio;
 import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.domain.Transaction;
+import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.PortfolioRepository;
 import com.traders.portfolio.service.dto.PortfolioDTO;
@@ -16,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -26,12 +28,14 @@ public class PortfolioService {
     private final RedisService redisService;
     private final ModelMapper modelMapper;
     private final DhanFeignService dhanClient;
+    private final StockService stockService;
 
-    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service) {
+    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService) {
         this.portfolioRepository = portfolioRepository;
         this.redisService = redisService;
         this.modelMapper = modelMapper;
         this.dhanClient = service;
+        this.stockService = stockService;
     }
     @Transactional
     public PortfolioDTO getUserPortfolio(String userId){
@@ -80,22 +84,29 @@ public class PortfolioService {
     }
     public void addTransactionToPortfolio(Long userId, Transaction transaction){
         var portfolio = getPortfolio(userId).orElseGet(()->new Portfolio(userId));
-        var stock = portfolio.getStocks().stream()
+        var stockInstance =  stockService.getStock(transaction.getStock().getId());
+        var portfolioStockDetails = portfolio.getStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
                 .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), transaction.getStock().getId()))
                 .findFirst()
-                .orElseGet(()->new PortfolioStock(portfolio,transaction.getStock()));
-        stock.getTransactions().add(transaction);
-        stock.addQuantity(transaction.getOrderType().getQuantity(),transaction.getPrice());
+                .orElseGet(()->{
+                    var profileStock = new PortfolioStock(portfolio,stockInstance);
+                    portfolio.getStocks().add(profileStock);
+                    return profileStock;
+                }); transaction.setStock(stockInstance);
+        portfolioStockDetails.getTransactions().add(transaction);
+
+        if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED)
+            portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(),transaction.getPrice());
         DhanRequest request = DhanRequest.get();
-        portfolio.getStocks().add(stock);
-        if(stock.getStock() !=null && Objects.equals(stock.getQuantity(), transaction.getOrderType().getQuantity())) {
-            request.addInstrument(DhanRequest.InstrumentDetails.of(stock.getStock().getInstrumentToken(),
-                    stock.getStock().getExchange(),stock.getStock().getName()));
-        }else if(stock.getStock() !=null && stock.getQuantity() == 0){
-            request.removeInstrument(DhanRequest.InstrumentDetails.of(stock.getStock().getInstrumentToken(),
-                    stock.getStock().getExchange(),stock.getStock().getName()));
+        //portfolio.getStocks().add(port);
+        if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
+            request.addInstrument(DhanRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
+        }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()==TransactionStatus.COMPLETED){
+            request.removeInstrument(DhanRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }
         savePortfolio(portfolio);
         dhanClient.subScribeInstruments(request);

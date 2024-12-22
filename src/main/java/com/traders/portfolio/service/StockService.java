@@ -25,4 +25,11 @@ public class StockService {
             throw new BadRequestAlertException("Invalid Stock id details", "Stock Service service", "Not a valid stock details");
         return stockRepository.findAllByIdIn(stockIds);
     }
+    @Transactional
+    public Stock getStock(Long stockId){
+        if(stockId == null || stockId<=0)
+            throw new BadRequestAlertException("Invalid Stock id details", "Stock Service service", "Not a valid stock details");
+        return stockRepository.findById(stockId).orElseThrow
+                (()->new BadRequestAlertException("Invalid Stock id details", "Stock Service service", "Not a valid stock details"));
+    }
 }

@@ -33,7 +33,7 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @Getter
     private Integer quantity =0;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "stock_id", referencedColumnName = "id")
     Stock stock;
     @ManyToOne
@@ -41,7 +41,7 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     private Portfolio portfolio;
 
     @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "transaction_id")
+    @JoinColumn(name = "portfoliostock_id")
     @OrderBy("ID DESC")
     private Set<Transaction> transactions = new HashSet<>();
 

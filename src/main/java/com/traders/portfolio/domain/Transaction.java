@@ -1,12 +1,17 @@
 package com.traders.portfolio.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name="transaction")
+@Getter
+@Setter
 public class Transaction extends AbstractAuditingEntity<Long> implements Serializable {
     
     @Id
@@ -16,9 +21,8 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     private Double price;
     private LocalDateTime requestTimestamp;
     private LocalDateTime completedTimestamp;
-    private Integer requestedQuantity;
     private Integer completedQuantity;
-
+    private Double completedPrice;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 
@@ -32,84 +36,11 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     @JoinColumn(name = "stock_id", referencedColumnName = "id")
     private Stock stock;
 
-    @Override
-    public Long getId() {
-        return id;
-    }
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "portfoliostock_id", insertable = false, updatable = false) // Read-only mapping
+    private PortfolioStock portfolioStock;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
 
-    public Double getPrice() {
-        return price;
-    }
 
-    public void setPrice(Double price) {
-        this.price = price;
-    }
 
-    public LocalDateTime getRequestTimestamp() {
-        return requestTimestamp;
-    }
-
-    public void setRequestTimestamp(LocalDateTime requestTimestamp) {
-        this.requestTimestamp = requestTimestamp;
-    }
-
-    public LocalDateTime getCompletedTimestamp() {
-        return completedTimestamp;
-    }
-
-    public void setCompletedTimestamp(LocalDateTime completedTimestamp) {
-        this.completedTimestamp = completedTimestamp;
-    }
-
-    public Integer getRequestedQuantity() {
-        return requestedQuantity;
-    }
-
-    public void setRequestedQuantity(Integer requestedQuantity) {
-        this.requestedQuantity = requestedQuantity;
-    }
-
-    public Integer getCompletedQuantity() {
-        return completedQuantity;
-    }
-
-    public void setCompletedQuantity(Integer completedQuantity) {
-        this.completedQuantity = completedQuantity;
-    }
-
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
-    }
-
-    public OrderCategory getOrderCategory() {
-        return orderCategory;
-    }
-
-    public void setOrderCategory(OrderCategory orderCategory) {
-        this.orderCategory = orderCategory;
-    }
-
-    public TransactionStatus getTransactionStatus() {
-        return transactionStatus;
-    }
-
-    public void setTransactionStatus(TransactionStatus transactionStatus) {
-        this.transactionStatus = transactionStatus;
-    }
-
-    public Stock getStock() {
-        return stock;
-    }
-
-    public void setStock(Stock stock) {
-        this.stock = stock;
-    }
 }

@@ -57,8 +57,8 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
     private Date expiry;
 
 
-    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
-    private Set<Transaction> transactions;
+    //    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
+//    private Set<Transaction> transactions;
     @Column(name = "isActive")
     private Boolean isActive;
 
@@ -132,9 +132,6 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
         return expiry;
     }
 
-    public Set<Transaction> getTransactions() {
-        return transactions;
-    }
 
     public void setInstrumentToken(long instrumentToken) {
         this.instrumentToken = instrumentToken;
@@ -180,9 +177,6 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
         this.expiry = expiry;
     }
 
-    public void setTransactions(Set<Transaction> transactions) {
-        this.transactions = transactions;
-    }
 
 
     public Boolean getActive() {

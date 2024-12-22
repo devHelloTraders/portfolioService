@@ -13,18 +13,17 @@ public enum TransactionStatus {
         }
     },PENDING,CANCELLED;
 
-    private int quantity;
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
+    private double completedPrice;
 
     public LocalDateTime completedTime(){
         return null;
     }
 
+    public double getCompletedPrice() {
+        return completedPrice;
+    }
+
+    public void setCompletedPrice(double completedPrice) {
+        this.completedPrice = completedPrice;
+    }
 }

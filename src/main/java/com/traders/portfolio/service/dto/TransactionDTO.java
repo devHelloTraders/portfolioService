@@ -16,7 +16,6 @@ public class TransactionDTO implements Serializable {
     private Double price;
     private LocalDateTime requestTimestamp = LocalDateTime.now();
     private LocalDateTime completedTimestamp;
-    private Integer requestedQuantity;
     private Integer completedQuantity;
     private OrderCategory orderCategory;
     private StockDTO stock;
