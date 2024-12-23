@@ -23,11 +23,6 @@ public class Portfolio  extends AbstractAuditingEntity<Long> implements Serializ
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-
-//    @OneToOne
-//    @JoinColumn(name = "user_id", referencedColumnName = "id")
-    //give manual foreign key
     private long userId;
 
     @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)

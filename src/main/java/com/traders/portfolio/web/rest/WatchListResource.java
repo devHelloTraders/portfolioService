@@ -1,13 +1,10 @@
 package com.traders.portfolio.web.rest;
 
-import com.traders.common.appconfig.util.HeaderUtil;
-import com.traders.common.constants.AuthoritiesConstants;
 import com.traders.common.appconfig.util.PaginationUtil;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.service.WatchListService;
 import com.traders.portfolio.service.WatchListStockService;
-import com.traders.portfolio.service.dto.TransactionDTO;
 import com.traders.portfolio.service.dto.WatchListDTO;
 import com.traders.portfolio.service.dto.WatchListStockDTO;
 import org.slf4j.Logger;
@@ -18,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -26,6 +22,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * REST controller for managing the current user's account.
@@ -123,8 +120,11 @@ public class WatchListResource {
         filters.put("watchList.id",watchListDTO.getId());
         final Page<WatchListStockDTO> page = watchListStockService.getFilterWatchListStocks(filters,pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        watchListDTO.setWatchListStocks(page.getContent());
+        watchListDTO.setWatchListStocks(updateDTOWithMarketQuotes( page.getContent()));
         return new ResponseEntity<>(watchListDTO, headers, HttpStatus.OK);
     }
 
+    private List<WatchListStockDTO> updateDTOWithMarketQuotes(List<WatchListStockDTO> watchListStockDTOS){
+        return watchListService.mapQuotesToDTO(watchListStockDTOS);
+    }
 }

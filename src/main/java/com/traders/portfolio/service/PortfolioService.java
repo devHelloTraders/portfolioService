@@ -1,5 +1,6 @@
 package com.traders.portfolio.service;
 
+import com.traders.common.model.MarkestDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Portfolio;
@@ -9,9 +10,8 @@ import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.PortfolioRepository;
 import com.traders.portfolio.service.dto.PortfolioDTO;
+import com.traders.portfolio.service.dto.PortfolioStockDTO;
 import com.traders.portfolio.web.rest.fign.DhanFeignService;
-import com.traders.portfolio.web.rest.fign.DhanFignClient;
-import com.traders.portfolio.web.rest.model.DhanRequest;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class PortfolioService {
@@ -27,14 +28,14 @@ public class PortfolioService {
     private final PortfolioRepository portfolioRepository;
     private final RedisService redisService;
     private final ModelMapper modelMapper;
-    private final DhanFeignService dhanClient;
+    private final DhanFeignService exchangeClient;
     private final StockService stockService;
 
     public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService) {
         this.portfolioRepository = portfolioRepository;
         this.redisService = redisService;
         this.modelMapper = modelMapper;
-        this.dhanClient = service;
+        this.exchangeClient = service;
         this.stockService = stockService;
     }
     @Transactional
@@ -51,11 +52,7 @@ public class PortfolioService {
     private PortfolioDTO getPortfolioDTO(Portfolio portfolio){
         PortfolioDTO portfolioDTO = new PortfolioDTO();
         modelMapper.map(portfolio,portfolioDTO);
-        portfolioDTO.getStocks()
-                .forEach(stock-> {
-                    stock.getStock().setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getStock().getInstrumentToken())));
-                    stock.getStock().updatePrice();
-                });
+        portfolioDTO.setStocks(mapQuotesToDTO(portfolioDTO.getStocks()));
         var portfolioPrice =portfolioDTO.getStocks()
                 .stream()
                 .reduce(
@@ -97,19 +94,39 @@ public class PortfolioService {
                 }); transaction.setStock(stockInstance);
         portfolioStockDetails.getTransactions().add(transaction);
 
-        if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED)
-            portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(),transaction.getPrice());
-        DhanRequest request = DhanRequest.get();
+        if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED) {
+            portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(), transaction.getPrice());
+        }
+        MarkestDetailsRequest request = MarkestDetailsRequest.get();
         //portfolio.getStocks().add(port);
         if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
-            request.addInstrument(DhanRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()==TransactionStatus.COMPLETED){
-            request.removeInstrument(DhanRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.removeInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }
         savePortfolio(portfolio);
-        dhanClient.subScribeInstruments(request);
+        exchangeClient.subScribeInstruments(request);
+    }
+
+    public Set<PortfolioStockDTO> mapQuotesToDTO(Set<PortfolioStockDTO> portfolioStocksDTOList){
+        MarkestDetailsRequest request =new MarkestDetailsRequest();
+        var filteredList =portfolioStocksDTOList.stream().map(PortfolioStockDTO::getStock)
+                .map(stock->{
+                    stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
+                    stock.updatePrice();
+                    request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    return stock;
+                }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
+                .toList();
+        var marketResponse = exchangeClient.getQuotesFromMarketList(request);
+        filteredList.forEach(stockDTO->{
+            MarketQuotes quotes = marketResponse.get(String.valueOf(stockDTO.getInstrumentToken()));
+            stockDTO.setQuotes(quotes);
+            stockDTO.updatePrice();
+        });
+        return portfolioStocksDTOList;
     }
 
 }

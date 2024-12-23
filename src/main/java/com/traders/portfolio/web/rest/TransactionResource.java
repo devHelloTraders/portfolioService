@@ -70,7 +70,6 @@ public class TransactionResource {
     @ResponseStatus(HttpStatus.CREATED)
     public void updateTransaction(@RequestBody TransactionDTO transactionDTO) {
         LOG.debug("REST request to update transaction");
-        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         var status =transactionDTO.getTransactionStatus();
         transactionService.updateTransactionStatus(transactionDTO.getId(),status);
     }
