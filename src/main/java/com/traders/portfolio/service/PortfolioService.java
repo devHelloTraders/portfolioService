@@ -1,6 +1,6 @@
 package com.traders.portfolio.service;
 
-import com.traders.common.model.MarkestDetailsRequest;
+import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Portfolio;
@@ -45,7 +45,7 @@ public class PortfolioService {
             throw new BadRequestAlertException("Invalid User details", "PortfolioService", "Not valid user passed in request");
 
         return getPortfolio(id)
-                           .map(this::getPortfolioDTO).orElseGet(PortfolioDTO::new);
+                .map(this::getPortfolioDTO).orElseGet(PortfolioDTO::new);
 
     }
 
@@ -97,13 +97,13 @@ public class PortfolioService {
         if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED) {
             portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(), transaction.getPrice());
         }
-        MarkestDetailsRequest request = MarkestDetailsRequest.get();
+        MarketDetailsRequest request = MarketDetailsRequest.get();
         //portfolio.getStocks().add(port);
         if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
-            request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()==TransactionStatus.COMPLETED){
-            request.removeInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }
         savePortfolio(portfolio);
@@ -111,12 +111,12 @@ public class PortfolioService {
     }
 
     public Set<PortfolioStockDTO> mapQuotesToDTO(Set<PortfolioStockDTO> portfolioStocksDTOList){
-        MarkestDetailsRequest request =new MarkestDetailsRequest();
+        MarketDetailsRequest request =new MarketDetailsRequest();
         var filteredList =portfolioStocksDTOList.stream().map(PortfolioStockDTO::getStock)
                 .map(stock->{
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
                     return stock;
                 }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
                 .toList();

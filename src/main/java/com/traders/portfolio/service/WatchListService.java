@@ -1,6 +1,6 @@
 package com.traders.portfolio.service;
 
-import com.traders.common.model.MarkestDetailsRequest;
+import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Stock;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class WatchListService {
@@ -70,9 +69,9 @@ public class WatchListService {
             throw new BadRequestAlertException("Invalid Stock details", "Watchlist service", "Not valid stock details passed in request");
         watchList.getStocks().removeAll(deletedStocks);
         saveWatchList(watchList);
-        MarkestDetailsRequest request = MarkestDetailsRequest.get();
+        MarketDetailsRequest request = MarketDetailsRequest.get();
         deletedStocks.stream().map(WatchlistStock::getStock).forEach(stock->{
-            request.removeInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
+            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
 
         });
         exchangeClient.subScribeInstruments(request);
@@ -134,14 +133,14 @@ public class WatchListService {
     private List<WatchlistStock> getWatchListStock(WatchList watchList,List<WatchlistStock> watchlistStocks,List<Long> stockIdList){
        if(stockIdList.isEmpty())
            return new ArrayList<>();
-        MarkestDetailsRequest request = MarkestDetailsRequest.get();
+        MarketDetailsRequest request = MarketDetailsRequest.get();
         stockService.getStocks(stockIdList).forEach(
                 stock->{
                     WatchlistStock watchlistStock = new WatchlistStock();
                     watchlistStock.setStock(stock);
                     watchlistStock.setWatchList(watchList);
                     watchlistStocks.add(watchlistStock);
-                    request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
         });
         exchangeClient.subScribeInstruments(request);
         return watchlistStocks;
@@ -158,12 +157,12 @@ public class WatchListService {
 
 
     public List<WatchListStockDTO> mapQuotesToDTO(List<WatchListStockDTO> watchListStocks){
-        MarkestDetailsRequest request =new MarkestDetailsRequest();
+        MarketDetailsRequest request =new MarketDetailsRequest();
         var filteredList =watchListStocks.stream().map(WatchListStockDTO::getStock)
                 .map(stock->{
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
                     return stock;
                 }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
                 .toList();
