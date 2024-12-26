@@ -1,8 +1,6 @@
 package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
-import com.traders.portfolio.domain.Portfolio;
-import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
@@ -91,7 +89,7 @@ public class TransactionService {
            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
 
         transaction.setCompletedTimestamp(status.completedTime());
-        transaction.setExecutedPrice(status.getCompletedPrice());
+        transaction.setExecutedPrice(status.getExecutedPrice());
         transaction.setTransactionStatus(status);
         transaction.getPortfolioStock().addQuantity(transaction.getLotSize(),transaction.getExecutedPrice());
         saveTransaction(transaction);

@@ -18,18 +18,18 @@ public enum TransactionStatus {
     PENDING,
     CANCELLED;
 
-    private Double completedPrice; // Nullable, no default value
+    private Double executedPrice; // Nullable, no default value
 
     public LocalDateTime completedTime() {
         return null;
     }
 
-    public Double getCompletedPrice() {
-        return completedPrice;
+    public Double getExecutedPrice() {
+        return executedPrice;
     }
 
-    public void setCompletedPrice(Double completedPrice) {
-        this.completedPrice = completedPrice;
+    public void setExecutedPrice(Double executedPrice) {
+        this.executedPrice = executedPrice;
     }
 
     // Serialize enum as JSON with its properties
@@ -37,7 +37,7 @@ public enum TransactionStatus {
     public Map<String, Object> toJson() {
         Map<String, Object> json = new HashMap<>();
         json.put("name", this.name());
-        json.put("completedPrice", this.completedPrice);
+        json.put("executedPrice", this.executedPrice);
         return json;
     }
 
@@ -46,8 +46,8 @@ public enum TransactionStatus {
     public static TransactionStatus fromJson(Map<String, Object> json) {
         String name = (String) json.get("name");
         TransactionStatus status = TransactionStatus.valueOf(name);
-        if (json.containsKey("completedPrice")) {
-            status.setCompletedPrice((Double) json.get("completedPrice"));
+        if (json.containsKey("executedPrice")) {
+            status.setExecutedPrice((Double) json.get("executedPrice"));
         }
         return status;
     }
