@@ -1,9 +1,8 @@
 package com.traders.portfolio.web.rest;
 
-import com.traders.common.appconfig.util.HeaderUtil;
 import com.traders.common.appconfig.util.PaginationUtil;
-import com.traders.common.constants.AuthoritiesConstants;
 import com.traders.portfolio.service.TransactionService;
+import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.service.dto.TransactionDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -60,10 +58,10 @@ public class TransactionResource {
     //TODO change it io machine endpoint if required
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public void getTransactions(@RequestBody TransactionDTO transactionDTO) {
+    public void getTransactions(@RequestBody TradeRequest tradeRequest) {
         LOG.debug("REST request to add transaction");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        transactionService.addTransaction(userId,transactionDTO);
+        transactionService.addTransaction(userId,tradeRequest);
     }
     //TODO change it io machine endpoint if required
     @PostMapping("/transactions/update")

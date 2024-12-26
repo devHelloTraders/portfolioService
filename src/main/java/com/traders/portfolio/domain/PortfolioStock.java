@@ -3,7 +3,6 @@ package com.traders.portfolio.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Where;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -31,7 +30,7 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
 
     private Double averageCost =0.0;
     @Getter
-    private Integer quantity =0;
+    private Double quantity=0.0;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "stock_id", referencedColumnName = "id")
@@ -45,8 +44,10 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @OrderBy("ID DESC")
     private Set<Transaction> transactions = new HashSet<>();
 
+    private int deleteflag;
 
-    public void addQuantity(Integer quantity, Double cost){
+
+    public void addQuantity(Double quantity, Double cost){
         Double txnCost =quantity * cost;
         Double currentAveragePrice = getAverageCost() * getQuantity();
         setQuantity(getQuantity()+quantity);
