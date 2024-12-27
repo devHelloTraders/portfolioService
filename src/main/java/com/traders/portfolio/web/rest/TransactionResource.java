@@ -58,7 +58,7 @@ public class TransactionResource {
     //TODO change it io machine endpoint if required
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public void getTransactions(@RequestBody TradeRequest tradeRequest) {
+    public void addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
         LOG.debug("REST request to add transaction");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         transactionService.addTransaction(userId,tradeRequest);
