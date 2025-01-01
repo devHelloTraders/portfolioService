@@ -3,14 +3,18 @@ package com.traders.portfolio.service;
 import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
+import com.traders.portfolio.domain.OrderCategory;
 import com.traders.portfolio.domain.Portfolio;
 import com.traders.portfolio.domain.PortfolioStock;
+import com.traders.portfolio.domain.Stock;
 import com.traders.portfolio.domain.Transaction;
-import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.PortfolioRepository;
+import com.traders.portfolio.repository.PortfolioStocksDetailRepository;
+import com.traders.portfolio.repository.TransactionRepository;
 import com.traders.portfolio.service.dto.PortfolioDTO;
 import com.traders.portfolio.service.dto.PortfolioStockDTO;
+import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.web.rest.fign.DhanFeignService;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class PortfolioService {
@@ -29,13 +34,17 @@ public class PortfolioService {
     private final ModelMapper modelMapper;
     private final DhanFeignService exchangeClient;
     private final StockService stockService;
+    private final TransactionRepository transactionRepository;
+    private final PortfolioStocksDetailRepository portfolioStocksDetailRepository;
 
-    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService) {
+    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService, TransactionRepository transactionRepository, PortfolioStocksDetailRepository portfolioStocksDetailRepository) {
         this.portfolioRepository = portfolioRepository;
         this.redisService = redisService;
         this.modelMapper = modelMapper;
         this.exchangeClient = service;
         this.stockService = stockService;
+        this.transactionRepository = transactionRepository;
+        this.portfolioStocksDetailRepository = portfolioStocksDetailRepository;
     }
     @Transactional
     public PortfolioDTO getUserPortfolio(String userId){
@@ -129,6 +138,19 @@ public class PortfolioService {
         return portfolioStocksDTOList;
     }
 
+    public void addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
+        Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
+        Portfolio savedPortfolio=savePortfolio(portfolio);
+
+        Stock stockInstance= stockService.getStock(tradeRequest.stockId());
+        tradeRequest.orderType().setQuantity(tradeRequest.lotSize());
+        PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
+
+        PortfolioStock savedPortfolioStockDetails=portfolioStocksDetailRepository.save(portfolioStockDetails);
+        tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails,tradeRequest,transactionRepository);
+
+        subscribeInstrument(savedPortfolioStockDetails,tradeRequest);
+        closeStockDeal(savedPortfolioStockDetails);
     public List<PortfolioStockDTO> getHistory(String userId){
         return getUserPortfolio(userId)
                 .getStocks()
@@ -139,5 +161,52 @@ public class PortfolioService {
                     modelMapper.map(stock,stockDto);
                     return stockDto;
                 }).toList();
+    }
+}
+
+    private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {
+        PortfolioStock portfolioStockDetails = portfolio.getStocks().stream()
+                .filter(Objects::nonNull)
+                .filter(portfolioStock->portfolioStock.getStock()!=null)
+                .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
+                .findFirst()
+                .orElseGet(()->{
+                    var profileStock = new PortfolioStock(savedPortfolio, stockInstance);
+                    savedPortfolio.getStocks().add(profileStock);
+                    return profileStock;
+                });
+
+        if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
+            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(), tradeRequest.price());
+        }
+        return portfolioStockDetails;
+    }
+
+    /**
+     * This private method is intended to close all the
+     * transaction for a given {@link PortfolioStock}.
+     * This will set deleteflag to 1 for all the related {@link Transaction}s
+     * and it-self as well.
+     * @param portfolioStock Stock/Instrument for which deal should be closed.
+     */
+    private void closeStockDeal(PortfolioStock portfolioStock){
+        if(portfolioStock.getQuantity() == 0){
+            transactionRepository.closeTransaction(portfolioStock);
+            portfolioStocksDetailRepository.closeInstrumentDeal(portfolioStock.getId());
+        }
+    }
+
+    private void subscribeInstrument(PortfolioStock portfolioStockDetails,TradeRequest tradeRequest) {
+        MarketDetailsRequest request = MarketDetailsRequest.get();
+        if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), tradeRequest.orderType().getQuantity())) {
+            request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
+        }else if(portfolioStockDetails.getStock() !=null
+                && portfolioStockDetails.getQuantity() == 0
+                && (tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET || tradeRequest.orderCategory() == OrderCategory.MARKET)){
+            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
+        }
+        exchangeClient.subScribeInstruments(request);
     }
 }

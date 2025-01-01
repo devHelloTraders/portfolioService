@@ -6,18 +6,18 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public enum OrderType {
     BUY {
         @Override
-        public Integer getQuantity() {
+        public Double getQuantity() {
             return quantity;
         }
     },SELL {
         @Override
-        public Integer getQuantity() {
+        public Double getQuantity() {
             return -1* quantity;
         }
     };
-    Integer quantity;
-    public void setQuantity(Integer quantity){
+    Double quantity;
+    public void setQuantity(Double quantity){
         this.quantity = quantity;
     }
-    public abstract Integer getQuantity();
+    public abstract Double getQuantity();
 }

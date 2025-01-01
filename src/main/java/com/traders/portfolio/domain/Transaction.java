@@ -1,12 +1,14 @@
 package com.traders.portfolio.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name="transaction")
@@ -21,8 +23,8 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     private Double price;
     private LocalDateTime requestTimestamp;
     private LocalDateTime completedTimestamp;
-    private Integer completedQuantity;
-    private Double completedPrice;
+    private Double lotSize;
+    private Double executedPrice;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 
@@ -32,15 +34,18 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     @Enumerated(EnumType.STRING)
     private TransactionStatus transactionStatus;
 
-    @ManyToOne
-    @JoinColumn(name = "stock_id", referencedColumnName = "id")
-    private Stock stock;
-
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "portfoliostock_id", insertable = false, updatable = false) // Read-only mapping
+    @JoinColumn(name = "portfoliostock_id", updatable = false) // Read-only mapping
     private PortfolioStock portfolioStock;
 
+    @ManyToOne
+    @JoinColumn(name = "parent_transaction_id",referencedColumnName = "id")
+    @JsonBackReference
+    private Transaction parentTransaction;
 
+    @OneToMany(mappedBy = "parentTransaction")
+    @JsonManagedReference
+    private List<Transaction> childTransactions;
 
-
+    private int deleteflag;
 }

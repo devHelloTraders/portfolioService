@@ -1,12 +1,11 @@
 package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
-import com.traders.portfolio.domain.Portfolio;
-import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.TransactionRepository;
+import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.service.dto.TransactionDTO;
 import com.traders.portfolio.service.specification.JPAFilterSpecification;
 import jakarta.transaction.Transactional;
@@ -75,17 +74,17 @@ public class TransactionService {
         return transaction;
     }
     @Transactional
-    public void addTransaction(String userId,@NotNull TransactionDTO transactionDTO){
+    public void addTransaction(String userId,@NotNull TradeRequest tradeRequest){
 
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Transaction Service", "Not valid user passed in request");
 
-        Transaction transaction = getTransactionFromDTO(transactionDTO);
-        transaction.getOrderType().setQuantity(transactionDTO.getCompletedQuantity());
-        if(TransactionStatus.COMPLETED == transaction.getTransactionStatus())
-            transaction.setCompletedPrice(transaction.getPrice());
-        portfolioService.addTransactionToPortfolio(id, transaction);
+        //Transaction transaction = getTransactionFromDTO(transactionDTO);
+        //transaction.getOrderType().setQuantity(transactionDTO.getCompletedQuantity());
+        //if(TransactionStatus.COMPLETED == transaction.getTransactionStatus())
+          //  transaction.setCompletedPrice(transaction.getPrice());
+        portfolioService.addTransactionToPortfolio(id, tradeRequest);
     }
     @Transactional
     public void updateTransactionStatus(@Valid  Long transactionId, @NotNull TransactionStatus status){
@@ -95,9 +94,9 @@ public class TransactionService {
            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
 
         transaction.setCompletedTimestamp(status.completedTime());
-        transaction.setCompletedPrice(status.getCompletedPrice());
+        transaction.setExecutedPrice(status.getExecutedPrice());
         transaction.setTransactionStatus(status);
-        transaction.getPortfolioStock().addQuantity(transaction.getCompletedQuantity(),transaction.getCompletedPrice());
+        transaction.getPortfolioStock().addQuantity(transaction.getLotSize(),transaction.getExecutedPrice());
         saveTransaction(transaction);
     }
 

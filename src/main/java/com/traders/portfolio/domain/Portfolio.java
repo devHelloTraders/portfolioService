@@ -31,7 +31,7 @@ public class Portfolio  extends AbstractAuditingEntity<Long> implements Serializ
     private long userId;
 
     @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Where(clause = "quantity != 0")
+    @Where(clause = "deleteflag != 1")
 
     private List<PortfolioStock> portfolioStocks = new ArrayList<>();
 
