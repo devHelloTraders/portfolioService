@@ -3,11 +3,7 @@ package com.traders.portfolio.service;
 import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
-import com.traders.portfolio.domain.OrderCategory;
-import com.traders.portfolio.domain.Portfolio;
-import com.traders.portfolio.domain.PortfolioStock;
-import com.traders.portfolio.domain.Stock;
-import com.traders.portfolio.domain.Transaction;
+import com.traders.portfolio.domain.*;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.PortfolioRepository;
 import com.traders.portfolio.repository.PortfolioStocksDetailRepository;
@@ -24,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class PortfolioService {
@@ -89,17 +84,18 @@ public class PortfolioService {
     }
     public void addTransactionToPortfolio(Long userId, Transaction transaction){
         var portfolio = getPortfolio(userId).orElseGet(()->new Portfolio(userId));
-        var stockInstance =  stockService.getStock(transaction.getStock().getId());
+        var stockInstance =  stockService.getStock(transaction.getPortfolioStock().getId());
         var portfolioStockDetails = portfolio.getPortfolioStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
-                .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), transaction.getStock().getId()))
+                .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), transaction.getPortfolioStock().getId()))
                 .findFirst()
                 .orElseGet(()->{
                     var profileStock = new PortfolioStock(portfolio,stockInstance);
                     portfolio.getPortfolioStocks().add(profileStock);
                     return profileStock;
-                }); transaction.setStock(stockInstance);
+                });
+        //transaction.setStock(stockInstance);
         portfolioStockDetails.getTransactions().add(transaction);
 
         if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED) {
@@ -109,7 +105,7 @@ public class PortfolioService {
         if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
             request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
-        }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()==TransactionStatus.COMPLETED){
+        }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()== TransactionStatus.COMPLETED){
             request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }
@@ -151,6 +147,9 @@ public class PortfolioService {
 
         subscribeInstrument(savedPortfolioStockDetails,tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
+
+    }
+
     public List<PortfolioStockDTO> getHistory(String userId){
         return getUserPortfolio(userId)
                 .getStocks()
@@ -161,18 +160,17 @@ public class PortfolioService {
                     modelMapper.map(stock,stockDto);
                     return stockDto;
                 }).toList();
-    }
 }
 
     private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {
-        PortfolioStock portfolioStockDetails = portfolio.getStocks().stream()
+        PortfolioStock portfolioStockDetails = portfolio.getPortfolioStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
                 .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
                 .findFirst()
                 .orElseGet(()->{
                     var profileStock = new PortfolioStock(savedPortfolio, stockInstance);
-                    savedPortfolio.getStocks().add(profileStock);
+                    savedPortfolio.getPortfolioStocks().add(profileStock);
                     return profileStock;
                 });
 
