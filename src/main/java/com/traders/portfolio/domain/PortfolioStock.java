@@ -10,8 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 @Entity
 @Table(
-        name = "portfolio_stocks_detail",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"portfolio_id", "stock_id"})
+        name = "portfolio_stocks_detail"
 )
 @Getter
 @Setter

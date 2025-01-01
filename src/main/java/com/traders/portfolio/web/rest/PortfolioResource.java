@@ -2,8 +2,10 @@ package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.HeaderUtil;
 import com.traders.common.appconfig.util.PaginationUtil;
+import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.service.PortfolioService;
 import com.traders.portfolio.service.dto.PortfolioDTO;
+import com.traders.portfolio.service.dto.PortfolioStockDTO;
 import com.traders.portfolio.service.dto.WatchListDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,8 +48,15 @@ public class PortfolioResource {
         return new ResponseEntity<>(portfolioService.getUserPortfolio(userId),
                 HeaderUtil.createAlert(applicationName, "portfolio retrived for user: "+userId,userId),
                 HttpStatus.OK);
+    }
 
-
+    @GetMapping("/portfolio/history")
+    public ResponseEntity<List<PortfolioStockDTO>> getPortfolioHistory(Pageable pageable, @RequestParam(required = false) Map<String,Object> filters) {
+        LOG.debug("REST request to get portfolio history");
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        return new ResponseEntity<>(portfolioService.getHistory(userId),
+                HeaderUtil.createAlert(applicationName, "portfolio history retrived for user: "+userId,userId),
+                HttpStatus.OK);
     }
     @GetMapping("/admin/portfolioForUser")
     public ResponseEntity<PortfolioDTO> getWatchListForUser(String userId) {

@@ -5,7 +5,9 @@ import lombok.Setter;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -18,7 +20,7 @@ public class PortfolioDTO implements Serializable {
     private Double currentReturn;
     private Double profit;
     private Float profitPercentage;
-    private Set<PortfolioStockDTO> stocks = new HashSet<>();
+    private List<PortfolioStockDTO> stocks = new ArrayList<>();
 
 
     public void calculatePortfolio(Pair<Double,Double> portfolioDetails){

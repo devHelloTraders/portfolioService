@@ -83,6 +83,8 @@ public class TransactionService {
 
         Transaction transaction = getTransactionFromDTO(transactionDTO);
         transaction.getOrderType().setQuantity(transactionDTO.getCompletedQuantity());
+        if(TransactionStatus.COMPLETED == transaction.getTransactionStatus())
+            transaction.setCompletedPrice(transaction.getPrice());
         portfolioService.addTransactionToPortfolio(id, transaction);
     }
     @Transactional

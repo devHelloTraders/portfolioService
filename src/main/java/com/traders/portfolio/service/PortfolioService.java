@@ -1,6 +1,6 @@
 package com.traders.portfolio.service;
 
-import com.traders.common.model.MarkestDetailsRequest;
+import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Portfolio;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class PortfolioService {
@@ -82,14 +81,14 @@ public class PortfolioService {
     public void addTransactionToPortfolio(Long userId, Transaction transaction){
         var portfolio = getPortfolio(userId).orElseGet(()->new Portfolio(userId));
         var stockInstance =  stockService.getStock(transaction.getStock().getId());
-        var portfolioStockDetails = portfolio.getStocks().stream()
+        var portfolioStockDetails = portfolio.getPortfolioStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
                 .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), transaction.getStock().getId()))
                 .findFirst()
                 .orElseGet(()->{
                     var profileStock = new PortfolioStock(portfolio,stockInstance);
-                    portfolio.getStocks().add(profileStock);
+                    portfolio.getPortfolioStocks().add(profileStock);
                     return profileStock;
                 }); transaction.setStock(stockInstance);
         portfolioStockDetails.getTransactions().add(transaction);
@@ -97,26 +96,27 @@ public class PortfolioService {
         if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED) {
             portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(), transaction.getPrice());
         }
-        MarkestDetailsRequest request = MarkestDetailsRequest.get();
-        //portfolio.getStocks().add(port);
+        MarketDetailsRequest request = MarketDetailsRequest.get();
         if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
-            request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()==TransactionStatus.COMPLETED){
-            request.removeInstrument(MarkestDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
+            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
                     portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
         }
         savePortfolio(portfolio);
         exchangeClient.subScribeInstruments(request);
     }
 
-    public Set<PortfolioStockDTO> mapQuotesToDTO(Set<PortfolioStockDTO> portfolioStocksDTOList){
-        MarkestDetailsRequest request =new MarkestDetailsRequest();
-        var filteredList =portfolioStocksDTOList.stream().map(PortfolioStockDTO::getStock)
+    public List<PortfolioStockDTO> mapQuotesToDTO(List<PortfolioStockDTO> portfolioStocksDTOList){
+        MarketDetailsRequest request =new MarketDetailsRequest();
+        var filteredList =portfolioStocksDTOList.stream()
+                .filter(stock->stock.getQuantity()!=0)
+                .map(PortfolioStockDTO::getStock)
                 .map(stock->{
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarkestDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
                     return stock;
                 }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
                 .toList();
@@ -129,4 +129,15 @@ public class PortfolioService {
         return portfolioStocksDTOList;
     }
 
+    public List<PortfolioStockDTO> getHistory(String userId){
+        return getUserPortfolio(userId)
+                .getStocks()
+                .stream()
+                .filter(stock->stock.getQuantity()==0)
+                .map(stock->{
+                    PortfolioStockDTO stockDto = new PortfolioStockDTO();
+                    modelMapper.map(stock,stockDto);
+                    return stockDto;
+                }).toList();
+    }
 }
