@@ -18,9 +18,10 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     public PortfolioStock(){
 
     }
-    public PortfolioStock(Portfolio portfolio,Stock stock){
+    public PortfolioStock(Portfolio portfolio,Stock stock,OrderValidity orderValidity){
         this.portfolio =portfolio;
         this.stock = stock;
+        this.orderValidity = orderValidity;
     }
 
     @Id
@@ -30,6 +31,10 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     private Double averageCost =0.0;
     @Getter
     private Double quantity=0.0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "validity")
+    private OrderValidity orderValidity;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "stock_id", referencedColumnName = "id")

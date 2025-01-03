@@ -82,36 +82,6 @@ public class PortfolioService {
     private Portfolio savePortfolio(Portfolio portfolio){
         return portfolioRepository.save(portfolio);
     }
-    public void addTransactionToPortfolio(Long userId, Transaction transaction){
-        var portfolio = getPortfolio(userId).orElseGet(()->new Portfolio(userId));
-        var stockInstance =  stockService.getStock(transaction.getPortfolioStock().getId());
-        var portfolioStockDetails = portfolio.getPortfolioStocks().stream()
-                .filter(Objects::nonNull)
-                .filter(portfolioStock->portfolioStock.getStock()!=null)
-                .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), transaction.getPortfolioStock().getId()))
-                .findFirst()
-                .orElseGet(()->{
-                    var profileStock = new PortfolioStock(portfolio,stockInstance);
-                    portfolio.getPortfolioStocks().add(profileStock);
-                    return profileStock;
-                });
-        //transaction.setStock(stockInstance);
-        portfolioStockDetails.getTransactions().add(transaction);
-
-        if(transaction.getTransactionStatus() == TransactionStatus.COMPLETED) {
-            portfolioStockDetails.addQuantity(transaction.getOrderType().getQuantity(), transaction.getPrice());
-        }
-        MarketDetailsRequest request = MarketDetailsRequest.get();
-        if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), transaction.getOrderType().getQuantity())) {
-            request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
-        }else if(portfolioStockDetails.getStock() !=null && portfolioStockDetails.getQuantity() == 0 && transaction.getTransactionStatus()== TransactionStatus.COMPLETED){
-            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
-        }
-        savePortfolio(portfolio);
-        exchangeClient.subScribeInstruments(request);
-    }
 
     public List<PortfolioStockDTO> mapQuotesToDTO(List<PortfolioStockDTO> portfolioStocksDTOList){
         MarketDetailsRequest request =new MarketDetailsRequest();
@@ -135,17 +105,17 @@ public class PortfolioService {
     }
 
     public void addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
-        Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
-        Portfolio savedPortfolio=savePortfolio(portfolio);
+        Portfolio currentPortfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
+        Portfolio updatedPortfolio = savePortfolio(currentPortfolio);
 
-        Stock stockInstance= stockService.getStock(tradeRequest.stockId());
+        Stock stockInstance = stockService.getStock(tradeRequest.stockId());
         tradeRequest.orderType().setQuantity(tradeRequest.lotSize());
-        PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
+        PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, currentPortfolio, updatedPortfolio, stockInstance);
 
-        PortfolioStock savedPortfolioStockDetails=portfolioStocksDetailRepository.save(portfolioStockDetails);
-        tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails,tradeRequest,transactionRepository);
+        PortfolioStock savedPortfolioStockDetails = portfolioStocksDetailRepository.save(portfolioStockDetails);
+        tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails, tradeRequest, transactionRepository);
 
-        subscribeInstrument(savedPortfolioStockDetails,tradeRequest);
+        subscribeInstrument(savedPortfolioStockDetails, tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
 
     }
@@ -162,15 +132,16 @@ public class PortfolioService {
                 }).toList();
 }
 
-    private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {
+    private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio updatedPortfolio, Stock stockInstance) {
         PortfolioStock portfolioStockDetails = portfolio.getPortfolioStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
+                .filter(portfolioStock -> Objects.equals(portfolioStock.getOrderValidity(),tradeRequest.orderValidity()))
                 .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
                 .findFirst()
                 .orElseGet(()->{
-                    var profileStock = new PortfolioStock(savedPortfolio, stockInstance);
-                    savedPortfolio.getPortfolioStocks().add(profileStock);
+                    var profileStock = new PortfolioStock(updatedPortfolio, stockInstance,tradeRequest.orderValidity());
+                    updatedPortfolio.getPortfolioStocks().add(profileStock);
                     return profileStock;
                 });
 

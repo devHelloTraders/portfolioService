@@ -76,14 +76,9 @@ public class TransactionService {
     @Transactional
     public void addTransaction(String userId,@NotNull TradeRequest tradeRequest){
 
-        long id;
+        long id=1;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Transaction Service", "Not valid user passed in request");
-
-        //Transaction transaction = getTransactionFromDTO(transactionDTO);
-        //transaction.getOrderType().setQuantity(transactionDTO.getCompletedQuantity());
-        //if(TransactionStatus.COMPLETED == transaction.getTransactionStatus())
-          //  transaction.setCompletedPrice(transaction.getPrice());
         portfolioService.addTransactionToPortfolio(id, tradeRequest);
     }
     @Transactional
