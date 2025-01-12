@@ -9,15 +9,17 @@ import java.util.Objects;
 @Getter
 @Setter
 public class StockId implements Serializable {
+    private long instrumentToken;
     private String tradingSymbol;
     private String exchange;
 
     public StockId() {
     }
 
-    public StockId(String tradingSymbol, String exchange) {
+    public StockId(long instrumentToken,String tradingSymbol, String exchange) {
         this.tradingSymbol = tradingSymbol;
         this.exchange = exchange;
+        this.instrumentToken=instrumentToken;
     }
 
 
@@ -30,7 +32,7 @@ public class StockId implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         StockId stockId = (StockId) o;
         return Objects.equals(tradingSymbol, stockId.tradingSymbol) &&
-               Objects.equals(exchange, stockId.exchange);
+                Objects.equals(exchange, stockId.exchange);
     }
 
     @Override

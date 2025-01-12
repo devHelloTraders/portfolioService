@@ -7,9 +7,9 @@ import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.TransactionRepository;
 import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.service.dto.TransactionDTO;
+import com.traders.portfolio.service.dto.TransactionUpdateRecord;
 import com.traders.portfolio.service.specification.JPAFilterSpecification;
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -74,23 +75,23 @@ public class TransactionService {
         return transaction;
     }
     @Transactional
-    public void addTransaction(String userId,@NotNull TradeRequest tradeRequest){
+    public long addTransaction(String userId,@NotNull TradeRequest tradeRequest){
 
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
             throw new BadRequestAlertException("Invalid User details", "Transaction Service", "Not valid user passed in request");
-        portfolioService.addTransactionToPortfolio(id, tradeRequest);
+        return portfolioService.addTransactionToPortfolio(id, tradeRequest);
     }
     @Transactional
-    public void updateTransactionStatus(@Valid  Long transactionId, @NotNull TransactionStatus status){
-        Transaction transaction = getTransactionById(transactionId).orElseThrow(()->
+    public void updateTransactionStatus( @NotNull TransactionUpdateRecord updateDTO){
+        Transaction transaction = getTransactionById(updateDTO.id()).orElseThrow(()->
          new BadRequestAlertException("Invalid Transaction details", "Transaction Service", "Not valid Transaction id passed in request"));
         if(transaction.getTransactionStatus()==TransactionStatus.COMPLETED || transaction.getTransactionStatus()==TransactionStatus.CANCELLED)
            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
-
-        transaction.setCompletedTimestamp(status.completedTime());
-        transaction.setExecutedPrice(status.getExecutedPrice());
-        transaction.setTransactionStatus(status);
+        updateDTO.transactionStatus().setExecutedPrice(updateDTO.price());
+        transaction.setCompletedTimestamp(LocalDateTime.now());
+        transaction.setExecutedPrice(updateDTO.price());
+        transaction.setTransactionStatus(updateDTO.transactionStatus());
         transaction.getPortfolioStock().addQuantity(transaction.getLotSize(),transaction.getExecutedPrice());
         saveTransaction(transaction);
     }

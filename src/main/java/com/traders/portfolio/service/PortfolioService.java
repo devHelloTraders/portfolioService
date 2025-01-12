@@ -106,7 +106,7 @@ public class PortfolioService {
         return portfolioStocksDTOList;
     }
 
-    public void addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
+    public long addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
         Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
         Portfolio savedPortfolio=savePortfolio(portfolio);
 
@@ -115,10 +115,12 @@ public class PortfolioService {
         PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
 
         PortfolioStock savedPortfolioStockDetails=portfolioStocksDetailRepository.save(portfolioStockDetails);
-        tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails,tradeRequest,transactionRepository);
+        var transaction =tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails,tradeRequest,transactionRepository);
 
         subscribeInstrument(savedPortfolioStockDetails,tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
+        return transaction.getId();
+
     }
 
     private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {

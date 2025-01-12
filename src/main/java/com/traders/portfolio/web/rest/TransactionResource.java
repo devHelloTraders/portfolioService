@@ -4,6 +4,7 @@ import com.traders.common.appconfig.util.PaginationUtil;
 import com.traders.portfolio.service.TransactionService;
 import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.service.dto.TransactionDTO;
+import com.traders.portfolio.service.dto.TransactionUpdateRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,18 +59,17 @@ public class TransactionResource {
     //TODO change it io machine endpoint if required
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public void addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
+    public long addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
         LOG.debug("REST request to add transaction");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        transactionService.addTransaction(userId,tradeRequest);
+        return transactionService.addTransaction(userId,tradeRequest);
     }
     //TODO change it io machine endpoint if required
     @PostMapping("/transactions/update")
     @ResponseStatus(HttpStatus.CREATED)
-    public void updateTransaction(@RequestBody TransactionDTO transactionDTO) {
+    public void updateTransaction(@RequestBody TransactionUpdateRecord transactionUpdateDTO) {
         LOG.debug("REST request to update transaction");
-        var status =transactionDTO.getTransactionStatus();
-        transactionService.updateTransactionStatus(transactionDTO.getId(),status);
+        transactionService.updateTransactionStatus(transactionUpdateDTO);
     }
 
     @GetMapping("/admin/transactionsForUser")
