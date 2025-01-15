@@ -14,6 +14,7 @@ public enum OrderCategory {
             Transaction transaction = createTransaction(request, this, TransactionStatus.COMPLETED, request.orderType());
             transaction.setPortfolioStock(portfolioStock);
             transaction.setExecutedPrice(request.price());
+            transaction.setCompletedTimestamp(LocalDateTime.now());
             return transactionRepository.save(transaction);
         }
     },

@@ -137,6 +137,9 @@ public class PortfolioService {
 
         if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
             portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(), tradeRequest.price());
+
+        }else{
+            portfolioStockDetails.setQuantity(tradeRequest.orderType().getQuantity());
         }
         return portfolioStockDetails;
     }
@@ -149,7 +152,7 @@ public class PortfolioService {
      * @param portfolioStock Stock/Instrument for which deal should be closed.
      */
     private void closeStockDeal(PortfolioStock portfolioStock){
-        if(portfolioStock.getQuantity() == 0){
+        if(portfolioStock.getQuantity() == 0 && portfolioStock.getIsCompleted()){
             transactionRepository.closeTransaction(portfolioStock);
             portfolioStocksDetailRepository.closeInstrumentDeal(portfolioStock.getId());
         }

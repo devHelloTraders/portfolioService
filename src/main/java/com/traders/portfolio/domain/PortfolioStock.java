@@ -43,7 +43,8 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @JoinColumn(name = "portfoliostock_id")
     @OrderBy("ID DESC")
     private Set<Transaction> transactions = new HashSet<>();
-
+    @Column(name = "isCompleted")
+    private Boolean isCompleted= false;
     private int deleteflag;
 
 
@@ -52,5 +53,6 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
         Double currentAveragePrice = getAverageCost() * getQuantity();
         setQuantity(getQuantity()+quantity);
         setAverageCost(getQuantity() >0 ?  (currentAveragePrice+txnCost)/getQuantity() : 0);
+        setIsCompleted(true);
     }
 }
