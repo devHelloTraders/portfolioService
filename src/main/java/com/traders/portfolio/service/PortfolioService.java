@@ -136,7 +136,7 @@ public class PortfolioService {
                 });
 
         if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
-            portfolioStockDetails.addQuantity(tradeRequest.lotSize(), tradeRequest.price());
+            portfolioStockDetails.addQuantity(tradeRequest.lotSize(), tradeRequest.askedPrice());
 
         }else{
             portfolioStockDetails.setQuantity(tradeRequest.lotSize());

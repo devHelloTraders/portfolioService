@@ -13,7 +13,7 @@ public enum OrderCategory {
         public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
             Transaction transaction = createTransaction(request, this, TransactionStatus.COMPLETED, request.orderType());
             transaction.setPortfolioStock(portfolioStock);
-            transaction.setExecutedPrice(request.price());
+            transaction.setExecutedPrice(request.askedPrice());
             transaction.setCompletedTimestamp(LocalDateTime.now());
             return transactionRepository.save(transaction);
         }
@@ -57,7 +57,7 @@ public enum OrderCategory {
     Transaction createTransaction(TradeRequest request, OrderCategory orderCategory, TransactionStatus status, OrderType orderType) {
         Transaction transaction = new Transaction();
         transaction.setLotSize(request.lotSize());
-        transaction.setPrice(request.price());
+        transaction.setPrice(request.askedPrice());
         transaction.setTransactionStatus(status);
         transaction.setOrderCategory(orderCategory);
         transaction.setOrderType(orderType);
@@ -68,7 +68,7 @@ public enum OrderCategory {
    void createStopLossTransaction(Transaction parentTransaction, TradeRequest request, TransactionRepository transactionRepository) {
         Transaction stopLossTransaction = new Transaction();
         stopLossTransaction.setLotSize(request.lotSize());
-        stopLossTransaction.setPrice(request.stopLossPrice()== null ? request.price() :  request.stopLossPrice());
+        stopLossTransaction.setPrice(request.stopLossPrice()== null ? request.askedPrice() :  request.stopLossPrice());
         stopLossTransaction.setTransactionStatus(TransactionStatus.PENDING);
         stopLossTransaction.setOrderCategory(STOP_LOSS);
         stopLossTransaction.setOrderType(OrderType.SELL);
@@ -80,7 +80,7 @@ public enum OrderCategory {
     void createTargetTransaction(Transaction parentTransaction, TradeRequest request, TransactionRepository transactionRepository) {
         Transaction targetTransaction = new Transaction();
         targetTransaction.setLotSize(request.lotSize());
-        targetTransaction.setPrice(request.targetPrice()== null ? request.price() :  request.targetPrice());
+        targetTransaction.setPrice(request.targetPrice()== null ? request.askedPrice() :  request.targetPrice());
         targetTransaction.setTransactionStatus(TransactionStatus.PENDING);
         targetTransaction.setOrderCategory(LIMIT);
         targetTransaction.setOrderType(OrderType.SELL);

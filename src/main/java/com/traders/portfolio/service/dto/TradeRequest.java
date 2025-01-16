@@ -8,7 +8,7 @@ public record TradeRequest(
         OrderType orderType,
         OrderCategory orderCategory,
         Long stockId,
-        Double price,
+        Double askedPrice,
         Double stopLossPrice,
         Double targetPrice
 ) {
