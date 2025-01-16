@@ -68,7 +68,7 @@ public enum OrderCategory {
    void createStopLossTransaction(Transaction parentTransaction, TradeRequest request, TransactionRepository transactionRepository) {
         Transaction stopLossTransaction = new Transaction();
         stopLossTransaction.setLotSize(request.lotSize());
-        stopLossTransaction.setPrice(request.stopLossPrice());
+        stopLossTransaction.setPrice(request.stopLossPrice()== null ? request.price() :  request.stopLossPrice());
         stopLossTransaction.setTransactionStatus(TransactionStatus.PENDING);
         stopLossTransaction.setOrderCategory(STOP_LOSS);
         stopLossTransaction.setOrderType(OrderType.SELL);
@@ -80,7 +80,7 @@ public enum OrderCategory {
     void createTargetTransaction(Transaction parentTransaction, TradeRequest request, TransactionRepository transactionRepository) {
         Transaction targetTransaction = new Transaction();
         targetTransaction.setLotSize(request.lotSize());
-        targetTransaction.setPrice(request.targetPrice());
+        targetTransaction.setPrice(request.targetPrice()== null ? request.price() :  request.targetPrice());
         targetTransaction.setTransactionStatus(TransactionStatus.PENDING);
         targetTransaction.setOrderCategory(LIMIT);
         targetTransaction.setOrderType(OrderType.SELL);
