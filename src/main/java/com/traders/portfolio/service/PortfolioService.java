@@ -136,10 +136,10 @@ public class PortfolioService {
                 });
 
         if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
-            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(), tradeRequest.price());
+            portfolioStockDetails.addQuantity(tradeRequest.lotSize(), tradeRequest.price());
 
         }else{
-            portfolioStockDetails.setQuantity(tradeRequest.orderType().getQuantity());
+            portfolioStockDetails.setQuantity(tradeRequest.lotSize());
         }
         return portfolioStockDetails;
     }
