@@ -56,7 +56,7 @@ public class TransactionResource {
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
     }
-    //TODO change it io machine endpoint if required
+
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
     public long addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
@@ -64,7 +64,7 @@ public class TransactionResource {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         return transactionService.addTransaction(userId,tradeRequest);
     }
-    //TODO change it io machine endpoint if required
+
     @PostMapping("/transactions/update")
     @ResponseStatus(HttpStatus.CREATED)
     public void updateTransaction(@RequestBody TransactionUpdateRecord transactionUpdateDTO) {
@@ -88,6 +88,4 @@ public class TransactionResource {
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
     }
-
-
 }

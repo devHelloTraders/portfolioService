@@ -19,9 +19,10 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     public PortfolioStock(){
 
     }
-    public PortfolioStock(Portfolio portfolio,Stock stock){
+    public PortfolioStock(Portfolio portfolio,Stock stock,OrderValidity orderValidity){
         this.portfolio =portfolio;
         this.stock = stock;
+        this.orderValidity = orderValidity;
     }
 
     @Id
@@ -46,6 +47,10 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @Column(name = "isCompleted")
     private Boolean isCompleted= false;
     private int deleteflag;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "validity")
+    private OrderValidity orderValidity;
 
 
     public void addQuantity(Double quantity, Double cost){

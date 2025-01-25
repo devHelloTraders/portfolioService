@@ -2,6 +2,7 @@ package com.traders.portfolio.service.dto;
 
 import com.traders.portfolio.domain.OrderCategory;
 import com.traders.portfolio.domain.OrderType;
+import com.traders.portfolio.domain.OrderValidity;
 
 public record TradeRequest(
         Double lotSize,
@@ -10,6 +11,7 @@ public record TradeRequest(
         Long stockId,
         Double askedPrice,
         Double stopLossPrice,
-        Double targetPrice
+        Double targetPrice,
+        OrderValidity orderValidity
 ) {
 }

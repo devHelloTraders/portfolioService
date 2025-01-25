@@ -127,17 +127,17 @@ public class PortfolioService {
         PortfolioStock portfolioStockDetails = portfolio.getStocks().stream()
                 .filter(Objects::nonNull)
                 .filter(portfolioStock->portfolioStock.getStock()!=null)
+                .filter(portfolioStock -> Objects.equals(portfolioStock.getOrderValidity(),tradeRequest.orderValidity()))
                 .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
                 .findFirst()
                 .orElseGet(()->{
-                    var profileStock = new PortfolioStock(savedPortfolio, stockInstance);
+                    var profileStock = new PortfolioStock(savedPortfolio, stockInstance, tradeRequest.orderValidity());
                     savedPortfolio.getStocks().add(profileStock);
                     return profileStock;
                 });
 
         if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
-            portfolioStockDetails.addQuantity(tradeRequest.lotSize(), tradeRequest.askedPrice());
-
+            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(),tradeRequest.askedPrice());
         }else{
             portfolioStockDetails.setQuantity(tradeRequest.lotSize());
         }
