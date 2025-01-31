@@ -12,9 +12,10 @@ import com.traders.portfolio.repository.WalletRepository;
 import com.traders.portfolio.repository.WithdrawRequestRepository;
 import com.traders.portfolio.service.dto.FundDepositRequest;
 import com.traders.portfolio.service.dto.FundWithdrawRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -48,6 +49,25 @@ public class WalletService {
         withdrawRequest.setRequestDateTime(DateTimeUtil.getCurrentDateTime());
         withdrawRequest.setRequestStatus(WalletRequestStatus.PENDING);
         withdrawRequestRepository.save(withdrawRequest);
+    }
+
+    public Double getCurrentBalance(Long userId){
+        Wallet wallet=getWalletFor(userId);
+        return wallet.getBalance();
+    }
+
+    public Page<WithdrawRequest> getWithdrawRequests(String userId, int page, int size){
+        long id=getUserId(userId);
+        Wallet wallet=getWalletFor(id);
+        PageRequest pageRequest=PageRequest.of(page, size);
+        return withdrawRequestRepository.findByWalletIdOrderByRequestDateTimeDesc(wallet,pageRequest);
+    }
+
+    public Page<DepositRequest> getDepositRequests(String userId, int page, int size){
+        long id=getUserId(userId);
+        Wallet wallet=getWalletFor(id);
+        PageRequest pageRequest=PageRequest.of(page, size);
+        return depositRequestRepository.findByWalletIdOrderByRequestDateTimeDesc(wallet,pageRequest);
     }
 
 

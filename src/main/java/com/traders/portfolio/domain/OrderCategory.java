@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 public enum OrderCategory {
     MARKET {
         @Override
-        public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            Transaction transaction = createTransaction(request, this, TransactionStatus.COMPLETED, request.orderType());
+        public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+            Transaction transaction = createTransaction(request, this, TransactionStatus.COMPLETED, request.orderType(),marginUsed);
             transaction.setPortfolioStock(portfolioStock);
             transaction.setExecutedPrice(request.askedPrice());
             transaction.setCompletedTimestamp(LocalDateTime.now());
@@ -20,16 +20,16 @@ public enum OrderCategory {
     },
     LIMIT {
         @Override
-        public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            Transaction transaction = createTransaction(request, this, TransactionStatus.PENDING, request.orderType());
+        public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+            Transaction transaction = createTransaction(request, this, TransactionStatus.PENDING, request.orderType(),marginUsed);
             transaction.setPortfolioStock(portfolioStock);
             return transactionRepository.save(transaction);
         }
     },
     BRACKET_AT_MARKET {
         @Override
-        public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            Transaction transaction = MARKET.addTransaction(portfolioStock, request, transactionRepository);
+        public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+            Transaction transaction = MARKET.addTransaction(marginUsed,portfolioStock, request, transactionRepository);
             createStopLossTransaction(transaction, request, transactionRepository);
             createTargetTransaction(transaction, request, transactionRepository);
             return transaction;
@@ -37,8 +37,8 @@ public enum OrderCategory {
     },
     BRACKET_AT_LIMIT {
         @Override
-        public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            Transaction transaction = LIMIT.addTransaction(portfolioStock, request, transactionRepository);
+        public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+            Transaction transaction = LIMIT.addTransaction(marginUsed,portfolioStock, request, transactionRepository);
             createStopLossTransaction(transaction, request, transactionRepository);
             createTargetTransaction(transaction, request, transactionRepository);
             return transaction;
@@ -46,15 +46,15 @@ public enum OrderCategory {
     },
     STOP_LOSS {
         @Override
-        public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            Transaction transaction = createTransaction(request, this, TransactionStatus.PENDING, OrderType.SELL);
+        public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+            Transaction transaction = createTransaction(request, this, TransactionStatus.PENDING, OrderType.SELL,marginUsed);
             return transactionRepository.save(transaction);
         }
     };
 
-    abstract public Transaction addTransaction(PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository);
+    abstract public Transaction addTransaction(Double marginUsed,PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository);
 
-    Transaction createTransaction(TradeRequest request, OrderCategory orderCategory, TransactionStatus status, OrderType orderType) {
+    Transaction createTransaction(TradeRequest request, OrderCategory orderCategory, TransactionStatus status, OrderType orderType,Double margin) {
         Transaction transaction = new Transaction();
         transaction.setLotSize(request.lotSize());
         transaction.setPrice(request.askedPrice());
@@ -62,6 +62,7 @@ public enum OrderCategory {
         transaction.setOrderCategory(orderCategory);
         transaction.setOrderType(orderType);
         transaction.setRequestTimestamp(LocalDateTime.now());
+        transaction.setMargin(margin);
         return transaction;
     }
 

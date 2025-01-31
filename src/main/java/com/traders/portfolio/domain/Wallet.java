@@ -1,6 +1,5 @@
 package com.traders.portfolio.domain;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,6 +19,8 @@ public class Wallet {
     private String createdAt;
 
     private long userId;
+    
+    private double balance;
 
     @OneToMany(mappedBy = "walletId")
     @JsonManagedReference

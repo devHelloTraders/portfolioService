@@ -1,10 +1,8 @@
 package com.traders.portfolio.service;
 
-import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.Stock;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.StockRepository;
-import com.traders.portfolio.service.dto.WatchListDTO;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 

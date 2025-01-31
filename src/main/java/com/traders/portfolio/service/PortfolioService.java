@@ -15,6 +15,13 @@ import com.traders.portfolio.repository.TransactionRepository;
 import com.traders.portfolio.service.dto.PortfolioDTO;
 import com.traders.portfolio.service.dto.PortfolioStockDTO;
 import com.traders.portfolio.service.dto.TradeRequest;
+import com.traders.portfolio.utils.PortfolioServiceContext;
+import com.traders.portfolio.validations.AbstractConfigValidator;
+import com.traders.portfolio.validations.future.EquityFutureConfValidator;
+import com.traders.portfolio.validations.future.MCXFutureConfValidator;
+import com.traders.portfolio.validations.options.EquityIndexOptionsConfValidator;
+import com.traders.portfolio.validations.options.EquityOptionsConfValidator;
+import com.traders.portfolio.validations.options.MCXOptionsConfValidator;
 import com.traders.portfolio.web.rest.fign.DhanFeignService;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -35,8 +42,9 @@ public class PortfolioService {
     private final StockService stockService;
     private final TransactionRepository transactionRepository;
     private final PortfolioStocksDetailRepository portfolioStocksDetailRepository;
+    private final WalletService walletService;
 
-    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService, TransactionRepository transactionRepository, PortfolioStocksDetailRepository portfolioStocksDetailRepository) {
+    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService, TransactionRepository transactionRepository, PortfolioStocksDetailRepository portfolioStocksDetailRepository, UserConfigurationService userConfigurationService, WalletService walletService) {
         this.portfolioRepository = portfolioRepository;
         this.redisService = redisService;
         this.modelMapper = modelMapper;
@@ -44,11 +52,13 @@ public class PortfolioService {
         this.stockService = stockService;
         this.transactionRepository = transactionRepository;
         this.portfolioStocksDetailRepository = portfolioStocksDetailRepository;
+        this.walletService = walletService;
     }
+
     @Transactional
-    public PortfolioDTO getUserPortfolio(String userId){
+    public PortfolioDTO getUserPortfolio(String userId) {
         long id;
-        if((id =CommonValidations.getNumber(userId,Long.class))==0)
+        if ((id = CommonValidations.getNumber(userId, Long.class)) == 0)
             throw new BadRequestAlertException("Invalid User details", "PortfolioService", "Not valid user passed in request");
 
         return getPortfolio(id)
@@ -56,11 +66,11 @@ public class PortfolioService {
 
     }
 
-    private PortfolioDTO getPortfolioDTO(Portfolio portfolio){
+    private PortfolioDTO getPortfolioDTO(Portfolio portfolio) {
         PortfolioDTO portfolioDTO = new PortfolioDTO();
-        modelMapper.map(portfolio,portfolioDTO);
+        modelMapper.map(portfolio, portfolioDTO);
         portfolioDTO.setStocks(mapQuotesToDTO(portfolioDTO.getStocks()));
-        var portfolioPrice =portfolioDTO.getStocks()
+        var portfolioPrice = portfolioDTO.getStocks()
                 .stream()
                 .reduce(
                         Pair.of(0.0, 0.0), // Initial accumulator: (investment, currentValue, unused)
@@ -79,26 +89,26 @@ public class PortfolioService {
     }
 
 
-    private Optional<Portfolio> getPortfolio(long userId){
+    private Optional<Portfolio> getPortfolio(long userId) {
         return portfolioRepository.findByUserId(userId);
     }
 
-    private Portfolio savePortfolio(Portfolio portfolio){
+    private Portfolio savePortfolio(Portfolio portfolio) {
         return portfolioRepository.save(portfolio);
     }
 
-    public Set<PortfolioStockDTO> mapQuotesToDTO(Set<PortfolioStockDTO> portfolioStocksDTOList){
-        MarketDetailsRequest request =new MarketDetailsRequest();
-        var filteredList =portfolioStocksDTOList.stream().map(PortfolioStockDTO::getStock)
-                .map(stock->{
+    public Set<PortfolioStockDTO> mapQuotesToDTO(Set<PortfolioStockDTO> portfolioStocksDTOList) {
+        MarketDetailsRequest request = new MarketDetailsRequest();
+        var filteredList = portfolioStocksDTOList.stream().map(PortfolioStockDTO::getStock)
+                .map(stock -> {
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(), stock.getExchange(), stock.getTradingSymbol()));
                     return stock;
-                }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
+                }).filter(stock -> stock.getQuotes() == null || stock.getLastPrice() == 0.0)
                 .toList();
         var marketResponse = exchangeClient.getQuotesFromMarketList(request);
-        filteredList.forEach(stockDTO->{
+        filteredList.forEach(stockDTO -> {
             MarketQuotes quotes = marketResponse.get(String.valueOf(stockDTO.getInstrumentToken()));
             stockDTO.setQuotes(quotes);
             stockDTO.updatePrice();
@@ -107,17 +117,22 @@ public class PortfolioService {
     }
 
     public long addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
-        Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
-        Portfolio savedPortfolio=savePortfolio(portfolio);
+        Stock stockInstance = stockService.getStock(tradeRequest.stockId());
+        AbstractConfigValidator configValidator = getConfValidator(stockInstance.getExchange(), stockInstance.getInstrumentType());
+        Double margin=configValidator.getMargin(userId, tradeRequest.orderValidity());
+        Double balance= walletService.getCurrentBalance(userId);
+        double marginUsed=((tradeRequest.lotSize()*tradeRequest.askedPrice())/margin);
+        if(balance<marginUsed){
+            //TODO: Throw error here
+        }
 
-        Stock stockInstance= stockService.getStock(tradeRequest.stockId());
+        Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
+        Portfolio savedPortfolio = savePortfolio(portfolio);
         tradeRequest.orderType().setQuantity(tradeRequest.lotSize());
         PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
-
-        PortfolioStock savedPortfolioStockDetails=portfolioStocksDetailRepository.save(portfolioStockDetails);
-        var transaction =tradeRequest.orderCategory().addTransaction(savedPortfolioStockDetails,tradeRequest,transactionRepository);
-
-        subscribeInstrument(savedPortfolioStockDetails,tradeRequest);
+        PortfolioStock savedPortfolioStockDetails = portfolioStocksDetailRepository.save(portfolioStockDetails);
+        var transaction = tradeRequest.orderCategory().addTransaction(marginUsed,savedPortfolioStockDetails, tradeRequest, transactionRepository);
+        subscribeInstrument(savedPortfolioStockDetails, tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
         return transaction.getId();
 
@@ -149,26 +164,47 @@ public class PortfolioService {
      * transaction for a given {@link PortfolioStock}.
      * This will set deleteflag to 1 for all the related {@link Transaction}s
      * and it-self as well.
+     *
      * @param portfolioStock Stock/Instrument for which deal should be closed.
      */
-    private void closeStockDeal(PortfolioStock portfolioStock){
-        if(portfolioStock.getQuantity() == 0 && portfolioStock.getIsCompleted()){
+    private void closeStockDeal(PortfolioStock portfolioStock) {
+        if (portfolioStock.getQuantity() == 0 && portfolioStock.getIsCompleted()) {
             transactionRepository.closeTransaction(portfolioStock);
             portfolioStocksDetailRepository.closeInstrumentDeal(portfolioStock.getId());
         }
     }
 
-    private void subscribeInstrument(PortfolioStock portfolioStockDetails,TradeRequest tradeRequest) {
+    private void subscribeInstrument(PortfolioStock portfolioStockDetails, TradeRequest tradeRequest) {
         MarketDetailsRequest request = MarketDetailsRequest.get();
-        if(portfolioStockDetails.getStock() !=null && Objects.equals(portfolioStockDetails.getQuantity(), tradeRequest.orderType().getQuantity())) {
+        if (portfolioStockDetails.getStock() != null && Objects.equals(portfolioStockDetails.getQuantity(), tradeRequest.orderType().getQuantity())) {
             request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
-        }else if(portfolioStockDetails.getStock() !=null
+                    portfolioStockDetails.getStock().getExchange(), portfolioStockDetails.getStock().getName()));
+        } else if (portfolioStockDetails.getStock() != null
                 && portfolioStockDetails.getQuantity() == 0
-                && (tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET || tradeRequest.orderCategory() == OrderCategory.MARKET)){
+                && (tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET || tradeRequest.orderCategory() == OrderCategory.MARKET)) {
             request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(),portfolioStockDetails.getStock().getName()));
+                    portfolioStockDetails.getStock().getExchange(), portfolioStockDetails.getStock().getName()));
         }
         exchangeClient.subScribeInstruments(request);
+    }
+
+    private AbstractConfigValidator getConfValidator(String exchange, String instrumentType) {
+        AbstractConfigValidator validator = null;
+        if ("MCX".equalsIgnoreCase(exchange)) {
+            if ("FUTCOM".equalsIgnoreCase(instrumentType)) {
+                validator = PortfolioServiceContext.getBean(MCXFutureConfValidator.class);
+            } else if ("OPTFUT".equalsIgnoreCase(instrumentType)) {
+                validator = PortfolioServiceContext.getBean(MCXOptionsConfValidator.class);
+            }
+        } else if ("NSE".equalsIgnoreCase(exchange)) {
+            if ("FUTSTK".equalsIgnoreCase(instrumentType)) {
+                validator = PortfolioServiceContext.getBean(EquityFutureConfValidator.class);
+            } else if ("OPTSTK".equalsIgnoreCase(instrumentType)) {
+                validator = PortfolioServiceContext.getBean(EquityOptionsConfValidator.class);
+            } else if ("OPTIDX".equalsIgnoreCase(instrumentType)) {
+                validator = PortfolioServiceContext.getBean(EquityIndexOptionsConfValidator.class);
+            }
+        }
+        return validator;
     }
 }

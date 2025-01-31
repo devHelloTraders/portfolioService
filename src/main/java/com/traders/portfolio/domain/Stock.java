@@ -66,5 +66,6 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
     @Column(name = "isActive")
     private Boolean isActive= true;
 
-
+    @Column(name="exchange_segment")
+    private String exchangeSegment;
 }

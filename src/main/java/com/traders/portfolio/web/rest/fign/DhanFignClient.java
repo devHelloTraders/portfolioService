@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.Map;
 
 @Service
-@FeignClient(name = "exchangeService", url = "${gateway.url}" ,configuration = FeignConfig.class)
+@FeignClient(name = "exchangeService", url = "${gateway.url}", configuration = FeignConfig.class)
 public interface DhanFignClient {
 
     @PostMapping("/api/exchange/machine/subscribe")
