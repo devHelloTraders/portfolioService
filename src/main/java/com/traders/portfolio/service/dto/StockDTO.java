@@ -18,6 +18,7 @@ public class StockDTO implements Serializable {
     private String instrumentType;
     private String segment;
     private String exchange;
+    private String exchangeSegment;
     private String strike;
     private float lotSize;
     private Date expiry;

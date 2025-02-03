@@ -103,7 +103,7 @@ public class PortfolioService {
                 .map(stock -> {
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(), stock.getExchange(), stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(), stock.getExchangeSegment(), stock.getTradingSymbol()));
                     return stock;
                 }).filter(stock -> stock.getQuotes() == null || stock.getLastPrice() == 0.0)
                 .toList();
@@ -178,12 +178,12 @@ public class PortfolioService {
         MarketDetailsRequest request = MarketDetailsRequest.get();
         if (portfolioStockDetails.getStock() != null && Objects.equals(portfolioStockDetails.getQuantity(), tradeRequest.orderType().getQuantity())) {
             request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(), portfolioStockDetails.getStock().getName()));
+                    portfolioStockDetails.getStock().getExchangeSegment(), portfolioStockDetails.getStock().getName()));
         } else if (portfolioStockDetails.getStock() != null
                 && portfolioStockDetails.getQuantity() == 0
                 && (tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET || tradeRequest.orderCategory() == OrderCategory.MARKET)) {
             request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(portfolioStockDetails.getStock().getInstrumentToken(),
-                    portfolioStockDetails.getStock().getExchange(), portfolioStockDetails.getStock().getName()));
+                    portfolioStockDetails.getStock().getExchangeSegment(), portfolioStockDetails.getStock().getName()));
         }
         exchangeClient.subScribeInstruments(request);
     }

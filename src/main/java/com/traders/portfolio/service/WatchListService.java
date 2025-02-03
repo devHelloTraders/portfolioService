@@ -71,7 +71,7 @@ public class WatchListService {
         saveWatchList(watchList);
         MarketDetailsRequest request = MarketDetailsRequest.get();
         deletedStocks.stream().map(WatchlistStock::getStock).forEach(stock->{
-            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
+            request.removeInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchangeSegment(),stock.getName()));
 
         });
         exchangeClient.subScribeInstruments(request);
@@ -140,7 +140,7 @@ public class WatchListService {
                     watchlistStock.setStock(stock);
                     watchlistStock.setWatchList(watchList);
                     watchlistStocks.add(watchlistStock);
-                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getName()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchangeSegment(),stock.getName()));
         });
         exchangeClient.subScribeInstruments(request);
         return watchlistStocks;
@@ -162,7 +162,7 @@ public class WatchListService {
                 .map(stock->{
                     stock.setQuotes((MarketQuotes) redisService.getStockValue(String.valueOf(stock.getInstrumentToken())));
                     stock.updatePrice();
-                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchange(),stock.getTradingSymbol()));
+                    request.addInstrument(MarketDetailsRequest.InstrumentDetails.of(stock.getInstrumentToken(),stock.getExchangeSegment(),stock.getTradingSymbol()));
                     return stock;
                 }).filter(stock->stock.getQuotes() ==null || stock.getLastPrice()==0.0)
                 .toList();
