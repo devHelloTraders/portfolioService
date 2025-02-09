@@ -7,6 +7,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+
 @Entity
 @Table(
         name = "portfolio_stocks_detail",
@@ -16,11 +17,12 @@ import java.util.Set;
 @Setter
 public class PortfolioStock extends AbstractAuditingEntity<Long> implements Serializable {
 
-    public PortfolioStock(){
+    public PortfolioStock() {
 
     }
-    public PortfolioStock(Portfolio portfolio,Stock stock,OrderValidity orderValidity){
-        this.portfolio =portfolio;
+
+    public PortfolioStock(Portfolio portfolio, Stock stock, OrderValidity orderValidity) {
+        this.portfolio = portfolio;
         this.stock = stock;
         this.orderValidity = orderValidity;
     }
@@ -29,9 +31,9 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double averageCost =0.0;
+    private Double averageCost = 0.0;
     @Getter
-    private Double quantity=0.0;
+    private Double quantity = 0.0;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "stock_id", referencedColumnName = "id")
@@ -45,7 +47,7 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     @OrderBy("ID DESC")
     private Set<Transaction> transactions = new HashSet<>();
     @Column(name = "isCompleted")
-    private Boolean isCompleted= false;
+    private Boolean isCompleted = false;
     private int deleteflag;
 
     @Enumerated(EnumType.STRING)
@@ -53,11 +55,11 @@ public class PortfolioStock extends AbstractAuditingEntity<Long> implements Seri
     private OrderValidity orderValidity;
 
 
-    public void addQuantity(Double quantity, Double cost){
-        Double txnCost =quantity * cost;
+    public void addQuantity(Double quantity, Double cost) {
+        Double txnCost = quantity * cost;
         Double currentAveragePrice = getAverageCost() * getQuantity();
-        setQuantity(getQuantity()+quantity);
-        setAverageCost(getQuantity() >0 ?  (currentAveragePrice+txnCost)/getQuantity() : 0);
+        setQuantity(getQuantity() + quantity);
+        setAverageCost(getQuantity() > 0 ? (currentAveragePrice + txnCost) / getQuantity() : 0);
         setIsCompleted(true);
     }
 }

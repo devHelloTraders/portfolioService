@@ -1,6 +1,7 @@
 package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
+import com.traders.common.utils.DateTimeUtil;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
@@ -17,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +75,7 @@ public class TransactionService {
         return transaction;
     }
     @Transactional
-    public long addTransaction(String userId,@NotNull TradeRequest tradeRequest){
+    public List<Long> addTransaction(String userId,@NotNull TradeRequest tradeRequest){
 
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
@@ -89,10 +89,10 @@ public class TransactionService {
         if(transaction.getTransactionStatus()==TransactionStatus.COMPLETED || transaction.getTransactionStatus()==TransactionStatus.CANCELLED)
            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
         updateDTO.transactionStatus().setExecutedPrice(updateDTO.price());
-        transaction.setCompletedTimestamp(LocalDateTime.now());
+        transaction.setCompletedTimestamp(DateTimeUtil.getCurrentDateTime());
         transaction.setExecutedPrice(updateDTO.price());
         transaction.setTransactionStatus(updateDTO.transactionStatus());
-        transaction.getPortfolioStock().addQuantity(transaction.getLotSize(),transaction.getExecutedPrice());
+        transaction.getPortfolioStock().addQuantity(transaction.getQty(),transaction.getExecutedPrice());
         saveTransaction(transaction);
     }
 

@@ -28,6 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -116,7 +117,7 @@ public class PortfolioService {
         return portfolioStocksDTOList;
     }
 
-    public long addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
+    public List<Long> addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
         Stock stockInstance = stockService.getStock(tradeRequest.stockId());
         AbstractConfigValidator configValidator = getConfValidator(stockInstance.getExchange(), stockInstance.getInstrumentType());
         Double margin=configValidator.getMargin(userId, tradeRequest.orderValidity());
@@ -128,14 +129,16 @@ public class PortfolioService {
 
         Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
         Portfolio savedPortfolio = savePortfolio(portfolio);
-        tradeRequest.orderType().setQuantity(tradeRequest.lotSize());
+
+        tradeRequest.orderType().setQuantity(tradeRequest.lotSize()*stockInstance.getLotSize());
+
         PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
         PortfolioStock savedPortfolioStockDetails = portfolioStocksDetailRepository.save(portfolioStockDetails);
-        var transaction = tradeRequest.orderCategory().addTransaction(marginUsed,savedPortfolioStockDetails, tradeRequest, transactionRepository);
+
+        var transactions = tradeRequest.orderCategory().addTransaction(marginUsed,savedPortfolioStockDetails, tradeRequest, transactionRepository);
         subscribeInstrument(savedPortfolioStockDetails, tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
-        return transaction.getId();
-
+        return transactions.stream().map(Transaction::getId).toList();
     }
 
     private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {

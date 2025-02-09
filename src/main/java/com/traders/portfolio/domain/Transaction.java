@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -21,10 +20,11 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
     private Long id;
 
     private Double price;
-    private LocalDateTime requestTimestamp;
-    private LocalDateTime completedTimestamp;
-    private Double lotSize;
+    private String requestTimestamp;
+    private String completedTimestamp;
+    private Double qty;
     private Double executedPrice;
+    private Double tradedQty;
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 

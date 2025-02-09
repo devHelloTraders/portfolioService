@@ -1,5 +1,6 @@
 package com.traders.portfolio.repository;
 
+import com.traders.portfolio.domain.OrderType;
 import com.traders.portfolio.domain.PortfolioStock;
 import com.traders.portfolio.domain.Transaction;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction,Long>, JpaSpecificationExecutor<Transaction> {
 
@@ -21,4 +24,8 @@ public interface TransactionRepository extends JpaRepository<Transaction,Long>, 
     @Modifying
     @Query("UPDATE Transaction SET deleteflag = 1 WHERE portfolioStock=:portfolioStock")
     void closeTransaction(@Param("portfolioStock") PortfolioStock portfolioStock);
+
+    List<Transaction> findAllByPortfolioStockAndQtyGreaterThanAndDeleteflagAndOrderType(PortfolioStock portfolioStock,
+                                                                                        Double qty,
+                                                                                        int deleteflag, OrderType orderType);
 }
