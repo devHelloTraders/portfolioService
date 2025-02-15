@@ -1,6 +1,7 @@
 package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.PaginationUtil;
+import com.traders.common.model.ExchangeSegment;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.service.WatchListService;
@@ -22,7 +23,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for managing the current user's account.
@@ -116,15 +118,22 @@ public class WatchListResource {
         if (filters == null) {
             filters = new HashMap<>();
         }
+        Optional<ExchangeSegment> exchangeSegment=watchListService.getExchangeSegment(filters);
+        if(exchangeSegment.isEmpty())
+            throw new BadRequestAlertException("Invalid Exchange Segment","WatchList service","Not a valid exchange segment");
+
         WatchListDTO watchListDTO = watchListService.getWatchList(userId);
         filters.put("watchList.id",watchListDTO.getId());
         final Page<WatchListStockDTO> page = watchListStockService.getFilterWatchListStocks(filters,pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        watchListDTO.setWatchListStocks(updateDTOWithMarketQuotes( page.getContent()));
+        watchListDTO.setWatchListStocks(updateDTOWithMarketQuotes(page.getContent(),exchangeSegment.get()));
         return new ResponseEntity<>(watchListDTO, headers, HttpStatus.OK);
     }
 
-    private List<WatchListStockDTO> updateDTOWithMarketQuotes(List<WatchListStockDTO> watchListStockDTOS){
-        return watchListService.mapQuotesToDTO(watchListStockDTOS);
+    private List<WatchListStockDTO> updateDTOWithMarketQuotes(List<WatchListStockDTO> watchListStockDTOS,ExchangeSegment exchangeSegment){
+        List<WatchListStockDTO> filteredScripts = watchListStockDTOS.stream().filter(watchListStockDTO ->
+                exchangeSegment.getInstrumentTypes().contains(watchListStockDTO.getStock().getInstrumentType())
+                && exchangeSegment.getExchanges().contains(watchListStockDTO.getStock().getExchange())).collect(Collectors.toList());
+        return watchListService.mapQuotesToDTO(filteredScripts);
     }
 }

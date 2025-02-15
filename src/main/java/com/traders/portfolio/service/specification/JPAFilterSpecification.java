@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class JPAFilterSpecification {
 
-    private static final List<String> PAGINATION_KEYS = List.of("page", "size", "sort","userId");
+    private static final List<String> PAGINATION_KEYS = List.of("page", "size", "sort","userId","watchListExchangeSegment");
 
 
     public static <T extends AbstractAuditingEntity<Long>>Specification<T> setFilter(Map<String,Object> filterMap) {

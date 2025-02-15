@@ -1,11 +1,14 @@
 package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.PaginationUtil;
-import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.service.TransactionService;
 import com.traders.portfolio.service.dto.TradeRequest;
 import com.traders.portfolio.service.dto.TransactionDTO;
 import com.traders.portfolio.service.dto.TransactionUpdateRecord;
+import com.traders.portfolio.trades.dto.ActiveTradesResponseDTO;
+import com.traders.portfolio.trades.dto.ClosedTradesResponseDTO;
+import com.traders.portfolio.trades.dto.PendingTradesResponseDTO;
+import com.traders.portfolio.trades.service.TradesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,10 +38,12 @@ public class TransactionResource {
     private final TransactionService transactionService;
     @Value("${config.clientApp.name}")
     private String applicationName;
+    private final TradesService tradesService;
 
-    public TransactionResource(TransactionService transactionService) {
+    public TransactionResource(TransactionService transactionService, TradesService tradesService) {
 
         this.transactionService = transactionService;
+        this.tradesService = tradesService;
     }
 
     @GetMapping("/transactions")
@@ -73,20 +78,78 @@ public class TransactionResource {
         transactionService.updateTransactionStatus(transactionUpdateDTO);
     }
 
-    @GetMapping("/admin/transactionsForUser")
-    public ResponseEntity<List<TransactionDTO>> getTransactionsForUser(String userId,Pageable pageable,@RequestParam(required = false) Map<String, Object> filters) {
-        LOG.debug("REST request to get transaction for user by admin");
+    @GetMapping("/transactions/closed/{userId}")
+    public ResponseEntity<List<ClosedTradesResponseDTO>> getClosedTradesForUser(int size,int page,@PathVariable String userId,@RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get closed trades for user by admin");
 
-
-        if (!PaginationUtil.onlyContainsAllowedProperties(pageable,ALLOWED_ORDERED_PROPERTIES)) {
-            return ResponseEntity.badRequest().build();
-        }
         if (filters == null) {
             filters = new HashMap<>();
         }
+        filters.put("userId", userId);
+        List<ClosedTradesResponseDTO> closedTrades=tradesService.getClosedTrades(size,page,filters);
+        return new ResponseEntity<>(closedTrades,HttpStatus.OK);
+    }
 
-        final Page<TransactionDTO> page = transactionService.getFilteredTransactions(userId,filters,pageable);
-        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return new ResponseEntity<>(page.getContent(), headers, HttpStatus.OK);
+    @GetMapping("/transactions/closed")
+    public ResponseEntity<List<ClosedTradesResponseDTO>> getClosedTrades(int size,int page,@RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get closed trades");
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        filters.put("userId",userId);
+
+        List<ClosedTradesResponseDTO> closedTrades=tradesService.getClosedTrades(size,page,filters);
+        return new ResponseEntity<>(closedTrades,HttpStatus.OK);
+    }
+
+    @GetMapping("/transactions/pending/{userId}")
+    public ResponseEntity<List<PendingTradesResponseDTO>> getPendingTradesForUser(int size,int page,@PathVariable String userId,@RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get pending trades for user by admin");
+
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        filters.put("userId", userId);
+        List<PendingTradesResponseDTO> pendingTrades=tradesService.getPendingTrades(size,page,filters);
+        return new ResponseEntity<>(pendingTrades,HttpStatus.OK);
+    }
+
+    @GetMapping("/transactions/pending")
+    public ResponseEntity<List<PendingTradesResponseDTO>> getPendingTrades(int size, int page, @RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get pending trades");
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        filters.put("userId",userId);
+
+        List<PendingTradesResponseDTO> pendingTrades=tradesService.getPendingTrades(size,page,filters);
+        return new ResponseEntity<>(pendingTrades,HttpStatus.OK);
+    }
+
+
+    @GetMapping("/transactions/active/{userId}")
+    public ResponseEntity<List<ActiveTradesResponseDTO>> getActiveTradesForUser(int size,int page,@PathVariable String userId,@RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get active trades for user by admin");
+
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        filters.put("userId", userId);
+        List<ActiveTradesResponseDTO> activeTrades=tradesService.getAllActiveTrades(size,page,filters);
+        return new ResponseEntity<>(activeTrades,HttpStatus.OK);
+    }
+
+    @GetMapping("/transactions/active")
+    public ResponseEntity<List<ActiveTradesResponseDTO>> getActiveTrades(int size, int page, @RequestParam(required = false) Map<String, Object> filters) {
+        LOG.debug("REST request to get active trades");
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        if (filters == null) {
+            filters = new HashMap<>();
+        }
+        filters.put("userId",userId);
+        List<ActiveTradesResponseDTO> activeTrades=tradesService.getAllActiveTrades(size,page,filters);
+        return new ResponseEntity<>(activeTrades,HttpStatus.OK);
     }
 }

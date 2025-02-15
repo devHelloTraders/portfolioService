@@ -1,5 +1,6 @@
 package com.traders.portfolio.service;
 
+import com.traders.common.model.ExchangeSegment;
 import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -173,5 +175,19 @@ public class WatchListService {
             stockDTO.updatePrice();
         });
         return watchListStocks;
+    }
+
+    public Optional<ExchangeSegment> getExchangeSegment(Map<String,Object> filters){
+        if(filters.containsKey("watchListExchangeSegment")){
+            String exchangeSegment = (String)filters.get("watchListExchangeSegment");
+            if(exchangeSegment.equalsIgnoreCase("MCX_COMM")){
+                return Optional.of(ExchangeSegment.MCX_COMM);
+            }else if(exchangeSegment.equalsIgnoreCase("NSE_FNO")){
+                return Optional.of(ExchangeSegment.NSE_FNO);
+            }else if(exchangeSegment.equalsIgnoreCase("OPTIONS")){
+                return Optional.of(ExchangeSegment.OPTIONS);
+            }
+        }
+        return Optional.empty();
     }
 }
