@@ -17,4 +17,5 @@ public class PendingTradesResponseDTO {
     private Double lotSize;
     private Double qty;
     private Long instrumentToken;
+    private String transactionStatus;
 }

@@ -56,7 +56,7 @@ public class TradesQueryBuilder {
     public String queryForPendingTrades(int size,int page,Map<String,Object> filters){
         StringBuilder query= new StringBuilder();
         query.append("SELECT t.id,t.order_type AS orderType,t.qty,t.qty/s.lot_size AS lotSize,s.name AS scriptName,t.price AS rate,t.request_timestamp AS requestedTime,s.instrument_token AS instrumentToken,")
-                .append("s.exchange ")
+                .append("s.exchange,t.transaction_status AS transactionStatus ")
                 .append("FROM ")
                 .append("transaction t ")
                 .append("JOIN portfolio_stocks_detail psd ON t.portfoliostock_id=psd.id ")
