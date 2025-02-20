@@ -54,7 +54,7 @@ public class Stock extends AbstractAuditingEntity<Long> implements Serializable 
     private String strike;
 
     @Column(name = "lot_size")
-    private float lotSize;
+    private Double lotSize;
 
     @Column(name = "expiry", nullable = false)
     @Temporal(TemporalType.DATE)

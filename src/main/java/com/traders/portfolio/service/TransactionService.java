@@ -2,13 +2,12 @@ package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
 import com.traders.common.utils.DateTimeUtil;
+import com.traders.portfolio.domain.Stock;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.TransactionRepository;
-import com.traders.portfolio.service.dto.TradeRequest;
-import com.traders.portfolio.service.dto.TransactionDTO;
-import com.traders.portfolio.service.dto.TransactionUpdateRecord;
+import com.traders.portfolio.service.dto.*;
 import com.traders.portfolio.service.specification.JPAFilterSpecification;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
@@ -95,6 +94,33 @@ public class TransactionService {
         transaction.getPortfolioStock().addQuantity(transaction.getQty(),transaction.getExecutedPrice());
         saveTransaction(transaction);
     }
+
+    public void cancelTransaction(@NotNull Long userId,@NotNull CancelTransactionRecord cancelTransactionRecord){
+        Transaction transaction = getTransactionById(cancelTransactionRecord.id()).orElseThrow(()->
+                new BadRequestAlertException("Invalid Transaction details", "Transaction Service", "Not valid Transaction id passed in request"));
+        if(transaction.getTransactionStatus()==TransactionStatus.COMPLETED || transaction.getTransactionStatus()==TransactionStatus.CANCELLED)
+            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and already Cancelled Transactions");
+        //TODO: CHECK password of user.
+        transaction.setTransactionStatus(TransactionStatus.CANCELLED);
+        transaction.setCompletedTimestamp(DateTimeUtil.getCurrentDateTime());
+        transaction.setDeleteflag(1);
+        saveTransaction(transaction);
+    }
+
+    public void updatePendingTransaction(@NotNull Long userId,@NotNull UpdatePendingTransactionRecord updateDTO){
+        Transaction transaction = getTransactionById(updateDTO.transactionId()).orElseThrow(()->
+                new BadRequestAlertException("Invalid Transaction details", "Transaction Service", "Not valid Transaction id passed in request"));
+        if(transaction.getTransactionStatus()==TransactionStatus.COMPLETED || transaction.getTransactionStatus()==TransactionStatus.CANCELLED)
+            throw new BadRequestAlertException("Invalid Transaction State", "Transaction Service", "You cant modify Completed and Cancelled Transactions");
+        transaction.setRequestTimestamp(DateTimeUtil.getCurrentDateTime());
+        transaction.setPrice(updateDTO.price());
+        transaction.setTransactionStatus(TransactionStatus.PENDING);
+        Double scriptLotSize=transaction.getPortfolioStock().getStock().getLotSize();
+        transaction.setQty(updateDTO.lotSize()*scriptLotSize);  //To convert it to qty.
+        transaction.setLastModifiedBy(String.valueOf(userId));
+        saveTransaction(transaction);
+    }
+
 
     private Optional<Transaction> getTransactionById(Long transactionId){
         return transactionRepository.findById(transactionId);

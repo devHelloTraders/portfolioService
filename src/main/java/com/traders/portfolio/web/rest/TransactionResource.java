@@ -2,13 +2,12 @@ package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.PaginationUtil;
 import com.traders.portfolio.service.TransactionService;
-import com.traders.portfolio.service.dto.TradeRequest;
-import com.traders.portfolio.service.dto.TransactionDTO;
-import com.traders.portfolio.service.dto.TransactionUpdateRecord;
+import com.traders.portfolio.service.dto.*;
 import com.traders.portfolio.trades.dto.ActiveTradesResponseDTO;
 import com.traders.portfolio.trades.dto.ClosedTradesResponseDTO;
 import com.traders.portfolio.trades.dto.PendingTradesResponseDTO;
 import com.traders.portfolio.trades.service.TradesService;
+import com.traders.portfolio.utils.UserIdSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +75,22 @@ public class TransactionResource {
     public void updateTransaction(@RequestBody TransactionUpdateRecord transactionUpdateDTO) {
         LOG.debug("REST request to update transaction");
         transactionService.updateTransactionStatus(transactionUpdateDTO);
+    }
+
+    @PutMapping("/transactions/update/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    public void cancelTransaction(@RequestBody CancelTransactionRecord cancelTransactionRecord) {
+        LOG.debug("REST request to cancel transaction");
+        Long userId=UserIdSupplier.getUserId();
+        transactionService.cancelTransaction(userId,cancelTransactionRecord);
+    }
+
+    @PutMapping("/transactions/update/pending-order")
+    @ResponseStatus(HttpStatus.OK)
+    public void updatePendingOrder(@RequestBody UpdatePendingTransactionRecord updatePendingTransactionRecord) {
+        LOG.debug("REST request to Update Pending transaction");
+        Long userId=UserIdSupplier.getUserId();
+        transactionService.updatePendingTransaction(userId,updatePendingTransactionRecord);
     }
 
     @GetMapping("/transactions/closed/{userId}")
