@@ -21,6 +21,10 @@ public class TradesService {
         return repository.getActiveTrades(size, page, filters);
     }
 
+    public List<ActiveTradesResponseDTO> getAllActiveTrades(Map<String, Object> filters) {
+        return repository.getActiveTrades(0,0,filters);
+    }
+
     public List<ClosedTradesResponseDTO> getClosedTrades(int size,int page, Map<String, Object> filters) {
         return repository.getClosedTrades(size, page, filters);
     }

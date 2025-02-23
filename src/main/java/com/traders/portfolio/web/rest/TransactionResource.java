@@ -64,10 +64,10 @@ public class TransactionResource {
 
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public List<Long> addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
+    public ResponseEntity<List<Long>> addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
         LOG.debug("REST request to add transaction");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        return transactionService.addTransaction(userId,tradeRequest);
+        return ResponseEntity.ok(transactionService.addTransaction(userId,tradeRequest));
     }
 
     @PostMapping("/transactions/update")

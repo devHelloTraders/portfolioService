@@ -39,13 +39,15 @@ public class TradesQueryBuilder {
      */
     public String queryForActiveTrades(int size,int page){
         StringBuilder query= new StringBuilder();
-        query.append("SELECT trades.id,trades.scriptName,trades.exchange,trades.orderType,trades.userId,trades.userName,trades.buyPrice,trades.sellPrice,trades.qty,trades.lotSize,trades.completedTrade,trades.shortSellTrade,trades.sellAtTime,trades.buyAtTime,trades.instrumentToken,trades.exchangeSegment,trades.tradingSymbol FROM ")
+        query.append("SELECT trades.id,trades.scriptName,trades.exchange,trades.orderType,trades.userId,trades.userName,trades.buyPrice,trades.sellPrice,trades.qty,trades.lotSize,trades.completedTrade,trades.shortSellTrade,trades.sellAtTime,trades.buyAtTime,trades.instrumentToken,trades.exchangeSegment,trades.tradingSymbol,trades.margin FROM ")
                 .append("(")
                 .append(queryForActiveBuys())
                 .append(" UNION ")
                 .append(queryForActiveSells())
-                .append(") AS trades")
-                .append(" LIMIT ").append(size);
+                .append(") AS trades");
+        if(size > 0) {
+            query.append(" LIMIT ").append(size);
+        }
         if(page>0){
             query.append(" OFFSET ").append(page*size);
         }
@@ -164,6 +166,7 @@ public class TradesQueryBuilder {
                 .append("NULL AS sellPrice,")
                 .append("t_buy.qty AS qty,")
                 .append("t_buy.qty/s.lot_size AS lotSize,")
+                .append("t_buy.margin AS margin,")
                 .append("0 AS completedTrade,")
                 .append("0 AS shortSellTrade,")
                 .append("t_buy.completed_timestamp AS buyAtTime,")
@@ -196,6 +199,7 @@ public class TradesQueryBuilder {
                 .append("t_sell.executed_price AS sellPrice,")
                 .append("t_sell.qty AS qty,")
                 .append("t_sell.qty/s.lot_size AS lotSize,")
+                .append("t_sell.margin AS margin,")
                 .append("0 AS completedTrade,")
                 .append("1 AS shortSellTrade,")
                 .append("NULL AS buyAtTime,")

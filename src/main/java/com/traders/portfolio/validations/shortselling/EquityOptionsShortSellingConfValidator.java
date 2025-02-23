@@ -3,8 +3,10 @@ package com.traders.portfolio.validations.shortselling;
 import com.traders.portfolio.constants.IdentityKeysConst;
 import com.traders.portfolio.domain.OrderValidity;
 import com.traders.portfolio.service.UserConfigurationService;
+import com.traders.portfolio.service.dto.TransactionRequest;
 import com.traders.portfolio.validations.AbstractConfigValidator;
-import com.traders.portfolio.validations.exception.ValidationException;
+import com.traders.portfolio.validations.exception.TradeValidationException;
+import com.traders.portfolio.web.rest.errors.TradeValidationErrorCode;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -34,8 +36,24 @@ public class EquityOptionsShortSellingConfValidator extends AbstractConfigValida
     }
 
     @Override
-    public void validate(Long userId) throws ValidationException {
+    public void validate(TransactionRequest transactionRequest) throws TradeValidationException {
+        Map<String,String> values=loadConfiguration(transactionRequest.getUserId());
+        if(values!=null && !values.isEmpty()) {
+            boolean tradingDisabled= "0".equalsIgnoreCase(values.getOrDefault(IdentityKeysConst.OPTIONS_EQUITY_SHORT_SELL_ALLOWED,"0"));
+            Double minimumQtyRequired = Double.valueOf(values.getOrDefault(IdentityKeysConst.MIN_LOT_SIZE_EQUITY_OPTIONS_SHORTSELL,"0"));
+            Double maximumQtyRequired = Double.valueOf(values.getOrDefault(IdentityKeysConst.MAX_LOT_SIZE_EQUITY_OPTIONS_SHORTSELL,"0"));
 
+            if(tradingDisabled)
+                throw new TradeValidationException(TradeValidationErrorCode.EQUITY_OPTIONS_SHORTSELLING_TRADING_DISABLED);
+
+            if(transactionRequest.getAskedLotSize() < minimumQtyRequired)
+                throw new TradeValidationException(TradeValidationErrorCode.EQUITY_OPTIONS_SHORTSELL_TRADING_MINIMUM_QTY_NEEDED,
+                        String.format("Minimum %f qty/lot size is required",minimumQtyRequired));
+
+            if(transactionRequest.getAskedLotSize() > maximumQtyRequired)
+                throw new TradeValidationException(TradeValidationErrorCode.EQUITY_OPTIONS_SHORTSELL_TRADING_MAX_QTY_LIMIT,
+                        String.format("Maximum allowed qty/lot size is %f",maximumQtyRequired));
+        }
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.traders.portfolio.domain;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.traders.common.utils.DateTimeUtil;
 import com.traders.portfolio.repository.TransactionRepository;
+import com.traders.portfolio.repository.WalletRepository;
 import com.traders.portfolio.service.dto.TradeRequest;
 
 import java.time.LocalDateTime;
@@ -17,8 +18,8 @@ public enum OrderCategory {
         public List<Transaction> addTransaction(Double marginUsed,
                                                 PortfolioStock portfolioStock,
                                                 TradeRequest request,
-                                                TransactionRepository transactionRepository) {
-            List<Transaction> transactions = request.orderType().getTransactions(marginUsed, portfolioStock, request, transactionRepository);
+                                                TransactionRepository transactionRepository,boolean shortSell) {
+            List<Transaction> transactions = request.orderType().getTransactions(marginUsed, portfolioStock, request, transactionRepository,shortSell);
             return transactions.stream().map(transaction -> {
                 transaction.setTransactionStatus(TransactionStatus.COMPLETED);
                 transaction.setOrderCategory(this);
@@ -30,8 +31,8 @@ public enum OrderCategory {
     },
     LIMIT {
         @Override
-        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            List<Transaction> transactions = request.orderType().getTransactions(marginUsed, portfolioStock, request, transactionRepository);
+        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository,boolean shortSell) {
+            List<Transaction> transactions = request.orderType().getTransactions(marginUsed, portfolioStock, request, transactionRepository,shortSell);
             return transactions.stream().map(transaction -> {
                 transaction.setTransactionStatus(TransactionStatus.PENDING);
                 transaction.setOrderCategory(this);
@@ -41,8 +42,8 @@ public enum OrderCategory {
     },
     BRACKET_AT_MARKET {
         @Override
-        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            List<Transaction> transactions = MARKET.addTransaction(marginUsed, portfolioStock, request, transactionRepository);
+        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository,boolean shortSell) {
+            List<Transaction> transactions = MARKET.addTransaction(marginUsed, portfolioStock, request, transactionRepository,shortSell);
             //createStopLossTransaction(transaction, request, transactionRepository);
             //createTargetTransaction(transaction, request, transactionRepository);
             return transactions;
@@ -50,8 +51,8 @@ public enum OrderCategory {
     },
     BRACKET_AT_LIMIT {
         @Override
-        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
-            List<Transaction> transactions = LIMIT.addTransaction(marginUsed, portfolioStock, request, transactionRepository);
+        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository,boolean shortSell) {
+            List<Transaction> transactions = LIMIT.addTransaction(marginUsed, portfolioStock, request, transactionRepository,shortSell);
             //createStopLossTransaction(transaction, request, transactionRepository);
             //createTargetTransaction(transaction, request, transactionRepository);
             return transactions;
@@ -59,14 +60,18 @@ public enum OrderCategory {
     },
     STOP_LOSS {
         @Override
-        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository) {
+        public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository,boolean shortSell) {
             /*Transaction transaction = createTransaction(request, this, TransactionStatus.PENDING, OrderType.SELL, marginUsed);
             return transactionRepository.save(transaction);*/
             return Collections.emptyList();
         }
     };
 
-    abstract public List<Transaction> addTransaction(Double marginUsed, PortfolioStock portfolioStock, TradeRequest request, TransactionRepository transactionRepository);
+    abstract public List<Transaction> addTransaction(Double marginUsed,
+                                                     PortfolioStock portfolioStock,
+                                                     TradeRequest request,
+                                                     TransactionRepository transactionRepository,
+                                                     boolean shortSell);
 
     /*void createStopLossTransaction(Transaction parentTransaction, TradeRequest request, TransactionRepository transactionRepository) {
         Transaction stopLossTransaction = new Transaction();

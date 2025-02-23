@@ -2,16 +2,16 @@ package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
 import com.traders.common.utils.DateTimeUtil;
-import com.traders.portfolio.domain.DepositRequest;
-import com.traders.portfolio.domain.Wallet;
-import com.traders.portfolio.domain.WalletRequestStatus;
-import com.traders.portfolio.domain.WithdrawRequest;
+import com.traders.portfolio.domain.*;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.DepositRequestRepository;
 import com.traders.portfolio.repository.WalletRepository;
+import com.traders.portfolio.repository.WalletTransactionRepository;
 import com.traders.portfolio.repository.WithdrawRequestRepository;
 import com.traders.portfolio.service.dto.FundDepositRequest;
 import com.traders.portfolio.service.dto.FundWithdrawRequest;
+import jakarta.transaction.Transactional;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -23,11 +23,13 @@ public class WalletService {
     private final DepositRequestRepository depositRequestRepository;
     private final WithdrawRequestRepository withdrawRequestRepository;
     private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
 
-    public WalletService(DepositRequestRepository depositRequestRepository, WithdrawRequestRepository withdrawRequestRepository, WalletRepository walletRepository) {
+    public WalletService(DepositRequestRepository depositRequestRepository, WithdrawRequestRepository withdrawRequestRepository, WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository) {
         this.depositRequestRepository = depositRequestRepository;
         this.withdrawRequestRepository = withdrawRequestRepository;
         this.walletRepository = walletRepository;
+        this.walletTransactionRepository = walletTransactionRepository;
     }
 
     public void addDepositRequest(String userId, FundDepositRequest fundDepositRequest)  {
@@ -54,6 +56,25 @@ public class WalletService {
     public Double getCurrentBalance(Long userId){
         Wallet wallet=getWalletFor(userId);
         return wallet.getBalance();
+    }
+
+    @Transactional
+    public void updateCurrentBalance(Long userId,
+                                     Double addOnBalance,
+                                     WalletTransactionType transactionType,
+                                     String transactionRemarks){
+        Wallet wallet=getWalletFor(userId);
+
+        WalletTransaction walletTransaction=new WalletTransaction();
+        walletTransaction.setAmount(addOnBalance);
+        walletTransaction.setTransactionType(transactionType);
+        walletTransaction.setWalletId(wallet);
+        walletTransaction.setRemarks(transactionRemarks);
+        walletTransaction.setCreatedDateTime(DateTimeUtil.getCurrentDateTime());
+        walletTransactionRepository.save(walletTransaction);
+
+        wallet.setBalance(wallet.getBalance()+walletTransaction.getAmount());
+        walletRepository.save(wallet);
     }
 
     public Page<WithdrawRequest> getWithdrawRequests(String userId, int page, int size){

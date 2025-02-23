@@ -20,7 +20,7 @@ public class Wallet {
 
     private long userId;
     
-    private double balance;
+    private Double balance;
 
     @OneToMany(mappedBy = "walletId")
     @JsonManagedReference

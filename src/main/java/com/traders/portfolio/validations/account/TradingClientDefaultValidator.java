@@ -3,6 +3,7 @@ package com.traders.portfolio.validations.account;
 import com.traders.portfolio.constants.IdentityKeysConst;
 import com.traders.portfolio.domain.OrderValidity;
 import com.traders.portfolio.service.UserConfigurationService;
+import com.traders.portfolio.service.dto.TransactionRequest;
 import com.traders.portfolio.validations.AbstractConfigValidator;
 import org.springframework.stereotype.Service;
 
@@ -33,8 +34,8 @@ public class TradingClientDefaultValidator extends AbstractConfigValidator {
     }
 
     @Override
-    public void validate(Long userId) {
-        Map<String, String> confValues = loadConfiguration(userId);
+    public void validate(TransactionRequest transactionRequest) {
+        Map<String, String> confValues = loadConfiguration(transactionRequest.getUserId());
     }
 
     @Override

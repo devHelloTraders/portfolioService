@@ -2,7 +2,6 @@ package com.traders.portfolio.service;
 
 import com.traders.common.utils.CommonValidations;
 import com.traders.common.utils.DateTimeUtil;
-import com.traders.portfolio.domain.Stock;
 import com.traders.portfolio.domain.Transaction;
 import com.traders.portfolio.domain.TransactionStatus;
 import com.traders.portfolio.exception.BadRequestAlertException;

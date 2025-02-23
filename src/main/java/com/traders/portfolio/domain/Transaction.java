@@ -49,4 +49,7 @@ public class Transaction extends AbstractAuditingEntity<Long> implements Seriali
 
     private int deleteflag;
     private double margin;
+
+    @Transient
+    private Double profitLoss;
 }

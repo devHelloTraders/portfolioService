@@ -3,11 +3,7 @@ package com.traders.portfolio.service;
 import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
 import com.traders.common.utils.CommonValidations;
-import com.traders.portfolio.domain.OrderCategory;
-import com.traders.portfolio.domain.Portfolio;
-import com.traders.portfolio.domain.PortfolioStock;
-import com.traders.portfolio.domain.Stock;
-import com.traders.portfolio.domain.Transaction;
+import com.traders.portfolio.domain.*;
 import com.traders.portfolio.exception.BadRequestAlertException;
 import com.traders.portfolio.repository.PortfolioRepository;
 import com.traders.portfolio.repository.PortfolioStocksDetailRepository;
@@ -15,23 +11,16 @@ import com.traders.portfolio.repository.TransactionRepository;
 import com.traders.portfolio.service.dto.PortfolioDTO;
 import com.traders.portfolio.service.dto.PortfolioStockDTO;
 import com.traders.portfolio.service.dto.TradeRequest;
-import com.traders.portfolio.utils.PortfolioServiceContext;
-import com.traders.portfolio.validations.AbstractConfigValidator;
-import com.traders.portfolio.validations.future.EquityFutureConfValidator;
-import com.traders.portfolio.validations.future.MCXFutureConfValidator;
-import com.traders.portfolio.validations.options.EquityIndexOptionsConfValidator;
-import com.traders.portfolio.validations.options.EquityOptionsConfValidator;
-import com.traders.portfolio.validations.options.MCXOptionsConfValidator;
+import com.traders.portfolio.trades.dto.ActiveTradesResponseDTO;
+import com.traders.portfolio.trades.service.TradesService;
 import com.traders.portfolio.web.rest.fign.DhanFeignService;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PortfolioService {
@@ -44,8 +33,9 @@ public class PortfolioService {
     private final TransactionRepository transactionRepository;
     private final PortfolioStocksDetailRepository portfolioStocksDetailRepository;
     private final WalletService walletService;
+    private final TradesService tradesService;
 
-    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService, TransactionRepository transactionRepository, PortfolioStocksDetailRepository portfolioStocksDetailRepository, UserConfigurationService userConfigurationService, WalletService walletService) {
+    public PortfolioService(PortfolioRepository portfolioRepository, RedisService redisService, ModelMapper modelMapper, DhanFeignService service, StockService stockService, TransactionRepository transactionRepository, PortfolioStocksDetailRepository portfolioStocksDetailRepository, UserConfigurationService userConfigurationService, WalletService walletService, TradesService tradesService) {
         this.portfolioRepository = portfolioRepository;
         this.redisService = redisService;
         this.modelMapper = modelMapper;
@@ -54,6 +44,7 @@ public class PortfolioService {
         this.transactionRepository = transactionRepository;
         this.portfolioStocksDetailRepository = portfolioStocksDetailRepository;
         this.walletService = walletService;
+        this.tradesService = tradesService;
     }
 
     @Transactional
@@ -62,30 +53,23 @@ public class PortfolioService {
         if ((id = CommonValidations.getNumber(userId, Long.class)) == 0)
             throw new BadRequestAlertException("Invalid User details", "PortfolioService", "Not valid user passed in request");
 
-        return getPortfolio(id)
-                .map(this::getPortfolioDTO).orElseGet(PortfolioDTO::new);
+        Double profitLoss=0.0;
+        Double marginAvailable=0.0;
+        Double moneyToMarket=0.0;
+        Double marginUsed=0.0;
+        List<ActiveTradesResponseDTO> activeTrades=tradesService.getAllActiveTrades(Collections.singletonMap("userId",id));
+        for(ActiveTradesResponseDTO trade:activeTrades){
+            profitLoss+=trade.getProfitLoss();
+            marginUsed+=trade.getMargin();
+        }
 
-    }
-
-    private PortfolioDTO getPortfolioDTO(Portfolio portfolio) {
         PortfolioDTO portfolioDTO = new PortfolioDTO();
-        modelMapper.map(portfolio, portfolioDTO);
-        portfolioDTO.setStocks(mapQuotesToDTO(portfolioDTO.getStocks()));
-        var portfolioPrice = portfolioDTO.getStocks()
-                .stream()
-                .reduce(
-                        Pair.of(0.0, 0.0), // Initial accumulator: (investment, currentValue, unused)
-                        (acc, stock) -> Pair.of(
-                                acc.getLeft() + stock.getQuantity() * stock.getStock().getLastPrice(), // Update investment
-                                acc.getRight() + stock.getQuantity() * stock.getAverageCost()
-                        ),
-                        (acc1, acc2) -> Pair.of(
-                                acc1.getLeft() + acc2.getLeft(),
-                                acc1.getRight() + acc2.getRight()
-                        )
-                );
+        portfolioDTO.setProfitLoss(profitLoss);
+        portfolioDTO.setLedgerBalance(walletService.getCurrentBalance(id));
+        portfolioDTO.setM2m(moneyToMarket);
+        portfolioDTO.setAvailableMargin(marginAvailable);
+        portfolioDTO.setActiveTrades(activeTrades);
 
-        portfolioDTO.calculatePortfolio(portfolioPrice);
         return portfolioDTO;
     }
 
@@ -119,13 +103,7 @@ public class PortfolioService {
 
     public List<Long> addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
         Stock stockInstance = stockService.getStock(tradeRequest.stockId());
-        AbstractConfigValidator configValidator = getConfValidator(stockInstance.getExchange(), stockInstance.getInstrumentType());
-        Double margin=configValidator.getMargin(userId, tradeRequest.orderValidity());
         Double balance= walletService.getCurrentBalance(userId);
-        double marginUsed=((tradeRequest.lotSize()*tradeRequest.askedPrice())/margin);
-        if(balance<marginUsed){
-            //TODO: Throw error here
-        }
 
         Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
         Portfolio savedPortfolio = savePortfolio(portfolio);
@@ -133,12 +111,19 @@ public class PortfolioService {
         tradeRequest.orderType().setQuantity(tradeRequest.lotSize()*stockInstance.getLotSize());
 
         PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
+        boolean shortSell=(portfolioStockDetails.getQuantity()<0);
+        if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
+            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(),tradeRequest.askedPrice());
+        }else{
+            portfolioStockDetails.setQuantity(tradeRequest.orderType().getQuantity());
+        }
         PortfolioStock savedPortfolioStockDetails = portfolioStocksDetailRepository.save(portfolioStockDetails);
 
-        var transactions = tradeRequest.orderCategory().addTransaction(marginUsed,savedPortfolioStockDetails, tradeRequest, transactionRepository);
+        var transactions = tradeRequest.orderCategory().addTransaction(balance,portfolioStockDetails, tradeRequest, transactionRepository,shortSell);
         subscribeInstrument(savedPortfolioStockDetails, tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
-        return transactions.stream().map(Transaction::getId).toList();
+        updateWalletBalance(userId,transactions,tradeRequest);
+        return transactions.stream().map(Transaction::getId).collect(Collectors.toList());
     }
 
     private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {
@@ -153,12 +138,6 @@ public class PortfolioService {
                     savedPortfolio.getStocks().add(profileStock);
                     return profileStock;
                 });
-
-        if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
-            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(),tradeRequest.askedPrice());
-        }else{
-            portfolioStockDetails.setQuantity(tradeRequest.lotSize());
-        }
         return portfolioStockDetails;
     }
 
@@ -177,6 +156,29 @@ public class PortfolioService {
         }
     }
 
+    private void updateWalletBalance(Long userId,List<Transaction> transactions,TradeRequest tradeRequest) {
+        transactions.forEach(transaction -> {
+            Double profitLoss = transaction.getProfitLoss();
+            double margin = transaction.getMargin();
+            String stockName = transaction.getPortfolioStock().getStock().getName();
+            String orderType = tradeRequest.orderType().name();
+            double lotSize = tradeRequest.lotSize();
+
+            if (profitLoss != null) {
+                String profitLossType = profitLoss > 0 ? "PROFIT" : "LOSS";
+                String remarks = String.format("%s booked after %s %f lotsize of %s", profitLossType, orderType, lotSize, stockName);
+                WalletTransactionType transactionType = profitLoss > 0 ? WalletTransactionType.PROFIT : WalletTransactionType.LOSS;
+                walletService.updateCurrentBalance(userId, profitLoss>0?profitLoss:-profitLoss, transactionType, remarks);
+            }
+
+            if (margin > 0) {
+                String remarks = String.format("%f Margin used for %s, %f lots of %s", margin, orderType, lotSize, stockName);
+                walletService.updateCurrentBalance(userId, -margin, WalletTransactionType.MARGIN, remarks);
+            }
+        });
+
+    }
+
     private void subscribeInstrument(PortfolioStock portfolioStockDetails, TradeRequest tradeRequest) {
         MarketDetailsRequest request = MarketDetailsRequest.get();
         if (portfolioStockDetails.getStock() != null && Objects.equals(portfolioStockDetails.getQuantity(), tradeRequest.orderType().getQuantity())) {
@@ -189,25 +191,5 @@ public class PortfolioService {
                     portfolioStockDetails.getStock().getExchangeSegment(), portfolioStockDetails.getStock().getName()));
         }
         exchangeClient.subScribeInstruments(request);
-    }
-
-    private AbstractConfigValidator getConfValidator(String exchange, String instrumentType) {
-        AbstractConfigValidator validator = null;
-        if ("MCX".equalsIgnoreCase(exchange)) {
-            if ("FUTCOM".equalsIgnoreCase(instrumentType)) {
-                validator = PortfolioServiceContext.getBean(MCXFutureConfValidator.class);
-            } else if ("OPTFUT".equalsIgnoreCase(instrumentType)) {
-                validator = PortfolioServiceContext.getBean(MCXOptionsConfValidator.class);
-            }
-        } else if ("NSE".equalsIgnoreCase(exchange)) {
-            if ("FUTSTK".equalsIgnoreCase(instrumentType)) {
-                validator = PortfolioServiceContext.getBean(EquityFutureConfValidator.class);
-            } else if ("OPTSTK".equalsIgnoreCase(instrumentType)) {
-                validator = PortfolioServiceContext.getBean(EquityOptionsConfValidator.class);
-            } else if ("OPTIDX".equalsIgnoreCase(instrumentType)) {
-                validator = PortfolioServiceContext.getBean(EquityIndexOptionsConfValidator.class);
-            }
-        }
-        return validator;
     }
 }

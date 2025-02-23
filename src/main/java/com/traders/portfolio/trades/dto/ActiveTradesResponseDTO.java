@@ -24,4 +24,5 @@ public class ActiveTradesResponseDTO {
     private String exchangeSegment;
     private String tradingSymbol;
     private Double profitLoss;
+    private Double margin;
 }

@@ -3,7 +3,10 @@ package com.traders.portfolio.validations.shortselling;
 import com.traders.portfolio.constants.IdentityKeysConst;
 import com.traders.portfolio.domain.OrderValidity;
 import com.traders.portfolio.service.UserConfigurationService;
+import com.traders.portfolio.service.dto.TransactionRequest;
 import com.traders.portfolio.validations.AbstractConfigValidator;
+import com.traders.portfolio.validations.exception.TradeValidationException;
+import com.traders.portfolio.web.rest.errors.TradeValidationErrorCode;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -31,8 +34,19 @@ public class IndexOptionsShortSellingConfValidator extends AbstractConfigValidat
     }
 
     @Override
-    public void validate(Long userId) {
+    public void validate(TransactionRequest transactionRequest) {
+        Map<String,String> values=loadConfiguration(transactionRequest.getUserId());
+        if(values!=null && !values.isEmpty()) {
+            boolean tradingDisabled= "0".equalsIgnoreCase(values.getOrDefault(IdentityKeysConst.OPTIONS_INDEX_SHORT_SELL_ALLOWED,"0"));
+            Double maximumQtyRequired = Double.valueOf(values.getOrDefault(IdentityKeysConst.MAX_SIZE_ALL_INDEX_OPTIONS_SHORTSELL,"0"));
 
+            if(tradingDisabled)
+                throw new TradeValidationException(TradeValidationErrorCode.INDEX_OPTION_DISABLE);
+
+            if(transactionRequest.getAskedLotSize() > maximumQtyRequired)
+                throw new TradeValidationException(TradeValidationErrorCode.INDEX_OPTION_SHORTSELLING_TRADING_MAX_QTY_LIMIT,
+                        String.format("Maximum allowed qty/lot size allowed is %f",maximumQtyRequired));
+        }
     }
 
     @Override
