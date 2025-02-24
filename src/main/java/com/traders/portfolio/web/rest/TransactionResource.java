@@ -1,6 +1,7 @@
 package com.traders.portfolio.web.rest;
 
 import com.traders.common.appconfig.util.PaginationUtil;
+import com.traders.common.model.TradeOrderDetails;
 import com.traders.portfolio.service.TransactionService;
 import com.traders.portfolio.service.dto.*;
 import com.traders.portfolio.trades.dto.ActiveTradesResponseDTO;
@@ -64,7 +65,7 @@ public class TransactionResource {
 
     @PostMapping("/transactions/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<List<Long>> addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
+    public ResponseEntity<List<TradeOrderDetails>> addTradeTransaction(@RequestBody TradeRequest tradeRequest) {
         LOG.debug("REST request to add transaction");
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         return ResponseEntity.ok(transactionService.addTransaction(userId,tradeRequest));

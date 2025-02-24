@@ -2,6 +2,7 @@ package com.traders.portfolio.service;
 
 import com.traders.common.model.MarketDetailsRequest;
 import com.traders.common.model.MarketQuotes;
+import com.traders.common.model.TradeOrderDetails;
 import com.traders.common.utils.CommonValidations;
 import com.traders.portfolio.domain.*;
 import com.traders.portfolio.exception.BadRequestAlertException;
@@ -53,14 +54,14 @@ public class PortfolioService {
         if ((id = CommonValidations.getNumber(userId, Long.class)) == 0)
             throw new BadRequestAlertException("Invalid User details", "PortfolioService", "Not valid user passed in request");
 
-        Double profitLoss=0.0;
-        Double marginAvailable=0.0;
-        Double moneyToMarket=0.0;
-        Double marginUsed=0.0;
-        List<ActiveTradesResponseDTO> activeTrades=tradesService.getAllActiveTrades(Collections.singletonMap("userId",id));
-        for(ActiveTradesResponseDTO trade:activeTrades){
-            profitLoss+=trade.getProfitLoss();
-            marginUsed+=trade.getMargin();
+        Double profitLoss = 0.0;
+        Double marginAvailable = 0.0;
+        Double moneyToMarket = 0.0;
+        Double marginUsed = 0.0;
+        List<ActiveTradesResponseDTO> activeTrades = tradesService.getAllActiveTrades(Collections.singletonMap("userId", id));
+        for (ActiveTradesResponseDTO trade : activeTrades) {
+            profitLoss += trade.getProfitLoss();
+            marginUsed += trade.getMargin();
         }
 
         PortfolioDTO portfolioDTO = new PortfolioDTO();
@@ -101,39 +102,44 @@ public class PortfolioService {
         return portfolioStocksDTOList;
     }
 
-    public List<Long> addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
+    public List<TradeOrderDetails> addTransactionToPortfolio(Long userId, TradeRequest tradeRequest) {
         Stock stockInstance = stockService.getStock(tradeRequest.stockId());
-        Double balance= walletService.getCurrentBalance(userId);
+        Double balance = walletService.getCurrentBalance(userId);
 
         Portfolio portfolio = getPortfolio(userId).orElseGet(() -> new Portfolio(userId));
         Portfolio savedPortfolio = savePortfolio(portfolio);
 
-        tradeRequest.orderType().setQuantity(tradeRequest.lotSize()*stockInstance.getLotSize());
+        tradeRequest.orderType().setQuantity(tradeRequest.lotSize() * stockInstance.getLotSize());
 
         PortfolioStock portfolioStockDetails = getPortfolioStock(tradeRequest, portfolio, savedPortfolio, stockInstance);
-        boolean shortSell=(portfolioStockDetails.getQuantity()<0);
-        if(tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET){
-            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(),tradeRequest.askedPrice());
-        }else{
+        boolean shortSell = (portfolioStockDetails.getQuantity() < 0);
+        if (tradeRequest.orderCategory() == OrderCategory.MARKET || tradeRequest.orderCategory() == OrderCategory.BRACKET_AT_MARKET) {
+            portfolioStockDetails.addQuantity(tradeRequest.orderType().getQuantity(), tradeRequest.askedPrice());
+        } else {
             portfolioStockDetails.setQuantity(tradeRequest.orderType().getQuantity());
         }
         PortfolioStock savedPortfolioStockDetails = portfolioStocksDetailRepository.save(portfolioStockDetails);
 
-        var transactions = tradeRequest.orderCategory().addTransaction(balance,portfolioStockDetails, tradeRequest, transactionRepository,shortSell);
+        var transactions = tradeRequest.orderCategory().addTransaction(balance, portfolioStockDetails, tradeRequest, transactionRepository, shortSell);
         subscribeInstrument(savedPortfolioStockDetails, tradeRequest);
         closeStockDeal(savedPortfolioStockDetails);
-        updateWalletBalance(userId,transactions,tradeRequest);
-        return transactions.stream().map(Transaction::getId).collect(Collectors.toList());
+        updateWalletBalance(userId, transactions, tradeRequest);
+        return transactions.stream()
+                .map(txn -> TradeOrderDetails.builder()
+                        .transactionId(txn.getId())
+                        .instrumentId(String.valueOf(txn.getPortfolioStock().getStock().getInstrumentToken()))
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private static PortfolioStock getPortfolioStock(TradeRequest tradeRequest, Portfolio portfolio, Portfolio savedPortfolio, Stock stockInstance) {
         PortfolioStock portfolioStockDetails = portfolio.getStocks().stream()
                 .filter(Objects::nonNull)
-                .filter(portfolioStock->portfolioStock.getStock()!=null)
-                .filter(portfolioStock -> Objects.equals(portfolioStock.getOrderValidity(),tradeRequest.orderValidity()))
-                .filter(portfolioStock-> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
+                .filter(portfolioStock -> portfolioStock.getStock() != null)
+                .filter(portfolioStock -> Objects.equals(portfolioStock.getOrderValidity(), tradeRequest.orderValidity()))
+                .filter(portfolioStock -> Objects.equals(portfolioStock.getStock().getId(), tradeRequest.stockId()))
                 .findFirst()
-                .orElseGet(()->{
+                .orElseGet(() -> {
                     var profileStock = new PortfolioStock(savedPortfolio, stockInstance, tradeRequest.orderValidity());
                     savedPortfolio.getStocks().add(profileStock);
                     return profileStock;
@@ -156,7 +162,7 @@ public class PortfolioService {
         }
     }
 
-    private void updateWalletBalance(Long userId,List<Transaction> transactions,TradeRequest tradeRequest) {
+    private void updateWalletBalance(Long userId, List<Transaction> transactions, TradeRequest tradeRequest) {
         transactions.forEach(transaction -> {
             Double profitLoss = transaction.getProfitLoss();
             double margin = transaction.getMargin();
@@ -168,7 +174,7 @@ public class PortfolioService {
                 String profitLossType = profitLoss > 0 ? "PROFIT" : "LOSS";
                 String remarks = String.format("%s booked after %s %f lotsize of %s", profitLossType, orderType, lotSize, stockName);
                 WalletTransactionType transactionType = profitLoss > 0 ? WalletTransactionType.PROFIT : WalletTransactionType.LOSS;
-                walletService.updateCurrentBalance(userId, profitLoss>0?profitLoss:-profitLoss, transactionType, remarks);
+                walletService.updateCurrentBalance(userId, profitLoss > 0 ? profitLoss : -profitLoss, transactionType, remarks);
             }
 
             if (margin > 0) {

@@ -1,5 +1,6 @@
 package com.traders.portfolio.service;
 
+import com.traders.common.model.TradeOrderDetails;
 import com.traders.common.utils.CommonValidations;
 import com.traders.common.utils.DateTimeUtil;
 import com.traders.portfolio.domain.Transaction;
@@ -73,7 +74,7 @@ public class TransactionService {
         return transaction;
     }
     @Transactional
-    public List<Long> addTransaction(String userId,@NotNull TradeRequest tradeRequest){
+    public List<TradeOrderDetails> addTransaction(String userId, @NotNull TradeRequest tradeRequest){
 
         long id;
         if((id =CommonValidations.getNumber(userId,Long.class))==0)
